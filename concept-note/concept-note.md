@@ -2,7 +2,7 @@
 
 ## The Problem
 
-Insurance exists to protect people at their most vulnerable moments — a sudden hospitalisation, a critical illness, or an untimely death. Yet at precisely those moments, the people who need to act on a policy often can't find it.
+Insurance exists to protect people at their most vulnerable moments — a sudden hospitalisation, a critical illness, or an untimely death. Yet at precisely those moments, the people who need to act on a policy often can't find it. People who need to act on it are family members, spouse, kids, friends, etc. 
 
 Policies are buried in emails, insurer portals, and physical folders. The insured person may be incapacitated. Their family may not even know what policies exist, let alone where to find them.
 
