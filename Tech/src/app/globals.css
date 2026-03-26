@@ -1,0 +1,88 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+
+@layer base {
+  :root {
+    --background: #faf9fb;
+    --foreground: #0f0f14;
+    --card: #ffffff;
+    --card-foreground: #0f0f14;
+    --primary: #7c3aed;
+    --primary-foreground: #ffffff;
+    --secondary: #e9d5ff;
+    --secondary-foreground: #5b21b6;
+    --muted: #e9e7ec;
+    --muted-foreground: #5a5a6b;
+    --accent: #f3f0f7;
+    --accent-foreground: #3b1e6b;
+    --destructive: #dc2626;
+    --destructive-foreground: #ffffff;
+    --border: #d4d0dc;
+    --input: #f5f3f7;
+    --ring: #c4b5fd;
+    --radius: 0.625rem;
+
+    --health: #d4f1f9;
+    --health-foreground: #0e5a72;
+    --life: #f0d9ff;
+    --life-foreground: #6b2b8a;
+    --term: #d1f4e0;
+    --term-foreground: #0a6e42;
+    --vehicle: #ffe4c4;
+    --vehicle-foreground: #8b5a0c;
+    --other: #e5e4ea;
+    --other-foreground: #3a3a4a;
+  }
+
+  .dark {
+    --background: #0a0a0f;
+    --foreground: #e8e8ed;
+    --card: #151520;
+    --card-foreground: #e8e8ed;
+    --primary: #e8e8ed;
+    --primary-foreground: #0a0a0f;
+    --secondary: #1f1f2e;
+    --secondary-foreground: #e8e8ed;
+    --muted: #1f1f2e;
+    --muted-foreground: #9090a0;
+    --accent: #2a2a3e;
+    --accent-foreground: #e8e8ed;
+    --destructive: #4a1a2a;
+    --destructive-foreground: #ffb3c1;
+    --border: #2a2a3e;
+    --input: #1f1f2e;
+    --ring: #4a4a5e;
+
+    --health: #1a2a35;
+    --health-foreground: #87ceeb;
+    --life: #2a1a35;
+    --life-foreground: #d4a5e8;
+    --term: #1a352a;
+    --term-foreground: #90e4b8;
+    --vehicle: #352a1a;
+    --vehicle-foreground: #f4c090;
+    --other: #25252e;
+    --other-foreground: #b8b8c8;
+  }
+
+  * {
+    @apply border-border;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1 { @apply text-2xl font-medium leading-normal; }
+  h2 { @apply text-xl font-medium leading-normal; }
+  h3 { @apply text-lg font-medium leading-normal; }
+  h4 { @apply text-base font-medium leading-normal; }
+}
+
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
