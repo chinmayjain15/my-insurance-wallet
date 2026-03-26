@@ -1,5 +1,6 @@
 'use client'
 
+import { useRouter } from 'next/navigation'
 import { FileText, Share2 } from 'lucide-react'
 import EmptyState from '@/components/ui/EmptyState'
 import { useAppData } from '@/components/AppDataProvider'
@@ -15,6 +16,7 @@ const TYPE_COLORS: Record<PolicyType, { bg: string; text: string }> = {
 
 export default function SharedPoliciesList() {
   const { sharedPolicies } = useAppData()
+  const router = useRouter()
 
   if (sharedPolicies.length === 0) {
     return (
@@ -30,13 +32,14 @@ export default function SharedPoliciesList() {
 
   return (
     <div className="max-w-lg mx-auto px-6 py-6 space-y-3">
-      <p className="text-sm text-muted-foreground mb-4">
-        {sharedPolicies.length} {sharedPolicies.length === 1 ? 'policy' : 'policies'} shared with you
-      </p>
       {sharedPolicies.map(policy => {
         const colors = TYPE_COLORS[policy.type]
         return (
-          <button key={policy.id} className="w-full bg-card border border-border rounded-xl p-4 hover:bg-accent transition-colors text-left">
+          <button
+            key={policy.id}
+            onClick={() => router.push(`/other-policies/${policy.id}`)}
+            className="w-full bg-card border border-border rounded-xl p-4 hover:bg-accent transition-colors text-left"
+          >
             <div className="flex items-start gap-3">
               <div className={`${colors.bg} ${colors.text} rounded-lg p-2.5 shrink-0`}>
                 <FileText className="w-5 h-5" />
@@ -51,7 +54,7 @@ export default function SharedPoliciesList() {
                     {new Date(policy.uploadedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
                   </span>
                 </div>
-                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <div className="flex items-center gap-1.5 text-xs text-primary/80">
                   <Share2 className="w-3 h-3" />
                   <span>Shared by {policy.sharedBy}</span>
                 </div>

@@ -2,19 +2,14 @@
 
 import { useActionState, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Upload, FileText, X, Loader2 } from 'lucide-react'
+import { ArrowLeft, Upload, FileText, CheckCircle2, Loader2, ShieldOff } from 'lucide-react'
 import { uploadPolicy } from '@/lib/actions/policies'
+import { useAppData } from '@/components/AppDataProvider'
 import { PolicyType } from '@/types'
 
 const POLICY_TYPES: PolicyType[] = ['Health', 'Life', 'Term', 'Vehicle', 'Other']
 
-const TYPE_COLORS: Record<PolicyType, { bg: string; activeBg: string; text: string; activeText: string; border: string }> = {
-  Health:  { bg: 'bg-[var(--health)]/10',  activeBg: 'bg-[var(--health)]',  text: 'text-[var(--health)]',  activeText: 'text-[var(--health-foreground)]',  border: 'border-[var(--health)]' },
-  Life:    { bg: 'bg-[var(--life)]/10',    activeBg: 'bg-[var(--life)]',    text: 'text-[var(--life)]',    activeText: 'text-[var(--life-foreground)]',    border: 'border-[var(--life)]' },
-  Term:    { bg: 'bg-[var(--term)]/10',    activeBg: 'bg-[var(--term)]',    text: 'text-[var(--term)]',    activeText: 'text-[var(--term-foreground)]',    border: 'border-[var(--term)]' },
-  Vehicle: { bg: 'bg-[var(--vehicle)]/10', activeBg: 'bg-[var(--vehicle)]', text: 'text-[var(--vehicle)]', activeText: 'text-[var(--vehicle-foreground)]', border: 'border-[var(--vehicle)]' },
-  Other:   { bg: 'bg-[var(--other)]/10',   activeBg: 'bg-[var(--other)]',   text: 'text-[var(--other)]',   activeText: 'text-[var(--other-foreground)]',   border: 'border-[var(--other)]' },
-}
+const LIMIT = 10
 
 function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`
@@ -24,6 +19,7 @@ function formatBytes(bytes: number): string {
 
 export default function UploadPolicyPage() {
   const router = useRouter()
+  const { policies } = useAppData()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [policyName, setPolicyName] = useState('')
@@ -34,41 +30,69 @@ export default function UploadPolicyPage() {
     const file = e.target.files?.[0] ?? null
     setSelectedFile(file)
     if (file && !policyName) {
-      // Auto-fill name from filename (strip extension)
       const nameWithoutExt = file.name.replace(/\.[^/.]+$/, '')
       setPolicyName(nameWithoutExt)
     }
   }
 
-  function clearFile() {
-    setSelectedFile(null)
-    if (fileInputRef.current) fileInputRef.current.value = ''
+  if (policies.length >= LIMIT) {
+    return (
+      <div className="min-h-screen flex flex-col px-6">
+        <div className="pt-6 pb-4">
+          <button
+            onClick={() => router.back()}
+            className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <ArrowLeft className="w-5 h-5" />
+            <span className="text-sm">Back</span>
+          </button>
+        </div>
+        <div className="flex-1 flex flex-col items-center justify-center text-center gap-4 py-16">
+          <div className="bg-muted rounded-full p-5">
+            <ShieldOff className="w-8 h-8 text-muted-foreground" />
+          </div>
+          <h2 className="text-foreground">Policy limit reached</h2>
+          <p className="text-sm text-muted-foreground max-w-xs">
+            You can store up to {LIMIT} policies. Delete an existing policy to upload a new one.
+          </p>
+          <button
+            onClick={() => router.push('/policies')}
+            className="mt-2 bg-primary text-primary-foreground rounded-xl px-6 py-3 font-medium hover:opacity-90 transition-opacity"
+          >
+            Manage Policies
+          </button>
+        </div>
+      </div>
+    )
   }
 
   return (
-    <div className="min-h-screen pb-8">
-      {/* Header */}
-      <div className="sticky top-0 z-10 bg-background border-b border-border">
-        <div className="max-w-lg mx-auto px-6 py-5 flex items-center gap-4">
-          <button
-            onClick={() => router.back()}
-            className="p-2 -ml-2 rounded-lg hover:bg-accent transition-colors"
-            aria-label="Go back"
-          >
-            <ArrowLeft className="w-5 h-5 text-foreground" />
-          </button>
-          <h1 className="text-foreground">Upload Policy</h1>
-        </div>
+    <div className="min-h-screen flex flex-col px-6">
+      {/* Back button */}
+      <div className="pt-6 pb-4">
+        <button
+          onClick={() => router.back()}
+          className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <ArrowLeft className="w-5 h-5" />
+          <span className="text-sm">Back</span>
+        </button>
       </div>
 
-      <form action={formAction}>
-        <div className="max-w-lg mx-auto px-6 py-6 space-y-6">
+      <form action={formAction} className="flex-1">
+        <div className="max-w-lg mx-auto w-full py-6 space-y-6">
 
-          {/* File picker — single input always in DOM, visual swaps around it */}
+          <div>
+            <h2 className="mb-2 text-foreground">Upload Policy</h2>
+            <p className="text-muted-foreground">
+              Add a new insurance policy to your wallet ({policies.length}/{LIMIT} used)
+            </p>
+          </div>
+
+          {/* File picker */}
           <div>
             <label className="block text-sm font-medium text-foreground mb-2">Policy Document</label>
 
-            {/* Always-present file input */}
             <input
               type="file"
               name="file"
@@ -78,39 +102,34 @@ export default function UploadPolicyPage() {
               onChange={handleFileChange}
             />
 
-            {selectedFile ? (
-              <div className="flex items-center gap-3 bg-card border border-border rounded-xl p-4">
-                <div className="bg-primary/10 rounded-lg p-2.5 shrink-0">
-                  <FileText className="w-5 h-5 text-primary" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-foreground truncate">{selectedFile.name}</p>
-                  <p className="text-xs text-muted-foreground">{formatBytes(selectedFile.size)}</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={clearFile}
-                  className="p-1.5 rounded-lg hover:bg-accent transition-colors shrink-0"
-                  aria-label="Remove file"
-                >
-                  <X className="w-4 h-4 text-muted-foreground" />
-                </button>
-              </div>
-            ) : (
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className="w-full border-2 border-dashed border-border rounded-xl p-8 flex flex-col items-center gap-3 hover:border-primary hover:bg-accent/50 transition-colors"
-              >
-                <div className="bg-muted rounded-full p-3">
-                  <Upload className="w-6 h-6 text-muted-foreground" />
-                </div>
-                <div className="text-center">
-                  <p className="text-sm font-medium text-foreground">Tap to select a file</p>
-                  <p className="text-xs text-muted-foreground mt-1">PDF, JPG, or PNG · Max 10 MB</p>
-                </div>
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="w-full border-2 border-dashed border-border rounded-xl p-8 flex flex-col items-center gap-3 hover:border-primary hover:bg-accent/50 transition-colors"
+            >
+              {selectedFile ? (
+                <>
+                  <div className="bg-primary/10 rounded-full p-3">
+                    <CheckCircle2 className="w-6 h-6 text-primary" />
+                  </div>
+                  <div className="text-center">
+                    <p className="text-sm font-medium text-foreground truncate max-w-[200px]">{selectedFile.name}</p>
+                    <p className="text-xs text-muted-foreground mt-1">{formatBytes(selectedFile.size)} · Tap to change</p>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="bg-muted rounded-full p-3">
+                    <Upload className="w-6 h-6 text-muted-foreground" />
+                  </div>
+                  <div className="text-center">
+                    <p className="text-sm font-medium text-foreground">Choose a file</p>
+                    <p className="text-xs text-muted-foreground mt-1">Tap to browse from your device</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">PDF, JPG, or PNG · Max 10 MB</p>
+                  </div>
+                </>
+              )}
+            </button>
           </div>
 
           {/* Policy name */}
@@ -132,7 +151,6 @@ export default function UploadPolicyPage() {
             <label className="block text-sm font-medium text-foreground mb-3">Policy Type</label>
             <div className="grid grid-cols-2 gap-2.5">
               {POLICY_TYPES.map(type => {
-                const colors = TYPE_COLORS[type]
                 const isActive = selectedType === type
                 return (
                   <button
@@ -141,19 +159,16 @@ export default function UploadPolicyPage() {
                     onClick={() => setSelectedType(type)}
                     className={`flex items-center gap-2.5 rounded-xl px-4 py-3 border transition-all ${
                       isActive
-                        ? `${colors.activeBg} ${colors.activeText} border-transparent`
-                        : `${colors.bg} ${colors.text} ${colors.border} border hover:opacity-80`
+                        ? 'border-primary bg-primary/10 text-primary'
+                        : 'border-border bg-card text-foreground hover:bg-accent'
                     }`}
                   >
-                    <div className={`w-2 h-2 rounded-full shrink-0 ${isActive ? colors.activeText : colors.text}`}
-                      style={{ backgroundColor: 'currentColor' }}
-                    />
+                    <FileText className="w-4 h-4 shrink-0" />
                     <span className="text-sm font-medium">{type}</span>
                   </button>
                 )
               })}
             </div>
-            {/* Hidden input carries the selected type */}
             <input type="hidden" name="type" value={selectedType ?? ''} />
           </div>
 
@@ -167,7 +182,7 @@ export default function UploadPolicyPage() {
           {/* Submit */}
           <button
             type="submit"
-            disabled={isPending}
+            disabled={!selectedFile || !policyName.trim() || isPending}
             className="w-full bg-primary text-primary-foreground rounded-xl py-3.5 font-medium flex items-center justify-center gap-2 hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isPending ? (

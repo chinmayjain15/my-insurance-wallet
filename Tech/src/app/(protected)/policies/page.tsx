@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Plus, FileText, Share2, ArrowLeft } from 'lucide-react'
 import EmptyState from '@/components/ui/EmptyState'
 import { useAppData } from '@/components/AppDataProvider'
@@ -20,7 +20,12 @@ const TYPE_COLORS: Record<PolicyType, { bg: string; text: string }> = {
 
 export default function PoliciesPage() {
   const { policies, contacts } = useAppData()
-  const [selected, setSelected] = useState<PolicyType | 'All'>('All')
+  const searchParams = useSearchParams()
+  const typeParam = searchParams.get('type')
+  const initialType = POLICY_TYPES.slice(1).find(
+    t => t.toLowerCase() === typeParam?.toLowerCase()
+  ) ?? 'All'
+  const [selected, setSelected] = useState<PolicyType | 'All'>(initialType)
   const router = useRouter()
 
   const filtered = selected === 'All' ? policies : policies.filter(p => p.type === selected)
@@ -34,9 +39,9 @@ export default function PoliciesPage() {
   const getContactName = (id: string) => contacts.find(c => c.id === id)?.name ?? id
 
   return (
-    <div className="min-h-screen pb-4">
+    <div className={`min-h-screen ${policies.length < 10 ? 'pb-40' : 'pb-4'}`}>
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-background border-b border-border">
+      <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-sm border-b border-border">
         <div className="max-w-lg mx-auto px-6 py-4">
           <div className="flex items-center justify-between mb-4">
             <button
@@ -168,6 +173,21 @@ export default function PoliciesPage() {
           </div>
         )}
       </div>
+
+      {/* Fixed Upload CTA — shown when under 10 policies */}
+      {policies.length < 10 && (
+        <div className="fixed bottom-20 left-0 right-0 px-6 pb-4 bg-gradient-to-t from-background via-background to-transparent pt-8 z-40 pointer-events-none">
+          <div className="max-w-lg mx-auto pointer-events-auto">
+            <button
+              onClick={() => router.push('/policies/upload')}
+              className="w-full bg-primary text-primary-foreground rounded-full px-6 py-3 font-medium hover:opacity-90 transition-all shadow-xl flex items-center justify-center gap-2"
+            >
+              <Plus className="w-4 h-4" />
+              Upload Policy
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

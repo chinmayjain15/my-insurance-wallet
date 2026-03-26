@@ -3,13 +3,23 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Users, FileText, X } from 'lucide-react'
+import { Users, FileText, X, Share2 } from 'lucide-react'
 import EmptyState from '@/components/ui/EmptyState'
 import { useAppData } from '@/components/AppDataProvider'
 
 export default function ContactsList() {
-  const { contacts, policies } = useAppData()
+  const { contacts, policies, userPhone } = useAppData()
   const router = useRouter()
+
+  function handleReferShare() {
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? window.location.origin
+    const utmReferrer = encodeURIComponent(userPhone || 'friend')
+    const appLink = `${baseUrl}?utm_source=referral&utm_medium=whatsapp&utm_referrer=${utmReferrer}`
+    const message = encodeURIComponent(
+      `Hey! I use My Insurance Store to keep all my family's insurance policies organised in one place and share them easily. It's really handy — check it out: ${appLink}`
+    )
+    window.open(`https://wa.me/?text=${message}`, '_blank')
+  }
   const [filterContactId, setFilterContactId] = useState<string | null>(null)
 
   const sharedCount = (contactId: string) =>
@@ -106,7 +116,11 @@ export default function ContactsList() {
       {/* Contacts list */}
       <div className="space-y-3">
         {contacts.map(contact => (
-          <div key={contact.id} className="bg-card border border-border rounded-xl p-4 flex items-center gap-3">
+          <button
+            key={contact.id}
+            onClick={() => router.push(`/contacts/${contact.id}`)}
+            className="w-full bg-card border border-border rounded-xl p-4 flex items-center gap-3 hover:bg-accent transition-colors text-left"
+          >
             <div className="w-10 h-10 rounded-full bg-accent flex items-center justify-center shrink-0">
               <span className="text-sm font-semibold text-foreground">{contact.name[0].toUpperCase()}</span>
             </div>
@@ -117,9 +131,22 @@ export default function ContactsList() {
                 {sharedCount(contact.id)} {sharedCount(contact.id) === 1 ? 'policy' : 'policies'} shared
               </p>
             </div>
-          </div>
+          </button>
         ))}
       </div>
+
+      {/* Referral CTA */}
+      <button
+        onClick={handleReferShare}
+        className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl p-4 hover:opacity-90 transition-opacity"
+      >
+        <div className="flex items-center justify-center gap-3">
+          <Share2 className="w-5 h-5" />
+          <div className="text-left">
+            <p className="font-medium">Invite your loved ones</p>
+          </div>
+        </div>
+      </button>
 
       {/* Privacy note */}
       <div className="bg-accent border border-border rounded-xl p-4">

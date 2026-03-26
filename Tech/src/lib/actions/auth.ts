@@ -23,14 +23,14 @@ export async function signInWithPhone(
 
   if (IS_STAGING) {
     const cookieStore = await cookies()
-    cookieStore.set(STAGING_COOKIE, JSON.stringify({ phone, createdAt: Date.now() }), {
+    cookieStore.set(STAGING_COOKIE, JSON.stringify({ phone, consentGiven: false, createdAt: Date.now() }), {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       maxAge: 60 * 60 * 24 * 7, // 7 days
       path: '/',
     })
-    redirect('/home')
+    redirect('/consent')
   }
 
   // Production: Supabase phone OTP
@@ -38,9 +38,24 @@ export async function signInWithPhone(
   return { error: 'Production auth not yet configured' }
 }
 
+export async function acceptConsent(): Promise<void> {
+  const cookieStore = await cookies()
+  const session = cookieStore.get(STAGING_COOKIE)
+  if (!session) redirect('/auth')
+  const data = JSON.parse(session.value)
+  cookieStore.set(STAGING_COOKIE, JSON.stringify({ ...data, consentGiven: true }), {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    maxAge: 60 * 60 * 24 * 7,
+    path: '/',
+  })
+  redirect('/home')
+}
+
 export async function demoSignIn(): Promise<void> {
   const cookieStore = await cookies()
-  cookieStore.set(STAGING_COOKIE, JSON.stringify({ phone: '9999999999', isDemo: true, createdAt: Date.now() }), {
+  cookieStore.set(STAGING_COOKIE, JSON.stringify({ phone: '9999999999', isDemo: true, consentGiven: true, createdAt: Date.now() }), {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',

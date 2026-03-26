@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useTransition, use } from 'react'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, Plus, Users, Loader2 } from 'lucide-react'
 import { useAppData } from '@/components/AppDataProvider'
@@ -8,12 +8,13 @@ import { sharePolicy, unsharePolicy } from '@/lib/actions/policies'
 import EmptyState from '@/components/ui/EmptyState'
 import Link from 'next/link'
 
-export default function SharePolicyPage({ params }: { params: { id: string } }) {
+export default function SharePolicyPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params)
   const router = useRouter()
   const { policies, contacts, isDemo } = useAppData()
   const [isPending, startTransition] = useTransition()
 
-  const policy = policies.find(p => p.id === params.id)
+  const policy = policies.find(p => p.id === id)
 
   const [selected, setSelected] = useState<Set<string>>(
     () => new Set(policy?.sharedWith ?? [])
@@ -41,7 +42,7 @@ export default function SharePolicyPage({ params }: { params: { id: string } }) 
   }
 
   function handleConfirm() {
-    if (isDemo) { router.back(); return }
+    if (isDemo || !policy) { router.back(); return }
     startTransition(async () => {
       for (const id of selected) {
         if (!originallyShared.has(id)) await sharePolicy(policy.id, id)
@@ -80,7 +81,7 @@ export default function SharePolicyPage({ params }: { params: { id: string } }) 
   return (
     <div className="min-h-screen pb-40">
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-background border-b border-border">
+      <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-sm border-b border-border">
         <div className="max-w-lg mx-auto px-6 py-4">
           <div className="flex items-center justify-between mb-3">
             <button
@@ -161,7 +162,7 @@ export default function SharePolicyPage({ params }: { params: { id: string } }) 
 
             {/* Add another contact */}
             <Link
-              href={`/contacts/add?returnTo=/policies/${params.id}/share`}
+              href={`/contacts/add?returnTo=/policies/${id}/share`}
               className="w-full bg-muted/50 border-2 border-dashed border-border rounded-xl p-4 hover:bg-accent transition-colors flex items-center justify-center gap-2 text-muted-foreground hover:text-foreground"
             >
               <Plus className="w-5 h-5" />

@@ -10,27 +10,27 @@ export default function AddContactForm({ returnTo }: { returnTo: string }) {
   const [state, formAction, isPending] = useActionState(addContact, { error: '' })
 
   return (
-    <div className="min-h-screen flex flex-col">
-      {/* Header */}
-      <div className="sticky top-0 z-10 bg-background border-b border-border">
-        <div className="max-w-lg mx-auto px-6 py-5 flex items-center gap-4">
-          <button
-            onClick={() => router.back()}
-            className="p-2 -ml-2 rounded-lg hover:bg-accent transition-colors"
-            aria-label="Go back"
-          >
-            <ArrowLeft className="w-5 h-5 text-foreground" />
-          </button>
-          <h1 className="text-foreground">Add Contact</h1>
-        </div>
+    <div className="min-h-screen flex flex-col px-6">
+      {/* Back button */}
+      <div className="pt-6 pb-4">
+        <button
+          onClick={() => router.back()}
+          className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <ArrowLeft className="w-5 h-5" />
+          <span className="text-sm">Back</span>
+        </button>
       </div>
 
       <form action={formAction} className="flex-1">
-        <div className="max-w-lg mx-auto w-full px-6 py-6 space-y-6">
+        <div className="max-w-lg mx-auto w-full py-6 space-y-6">
 
-          <p className="text-muted-foreground">
-            Add a trusted family member or friend to share your insurance policies with them.
-          </p>
+          <div>
+            <h2 className="mb-2 text-foreground">Add Contact</h2>
+            <p className="text-muted-foreground">
+              Add a trusted family member or friend to share your insurance policies with them.
+            </p>
+          </div>
 
           {/* Pass returnTo through the form */}
           <input type="hidden" name="returnTo" value={returnTo} />

@@ -3,6 +3,7 @@ import { STAGING_COOKIE } from '@/lib/constants'
 import { AppDataProvider } from '@/components/AppDataProvider'
 import BottomNav from '@/components/layout/BottomNav'
 import { getUserData } from '@/lib/data'
+import { getUserName } from '@/lib/actions/profile'
 import { Policy, Contact, SharedPolicy } from '@/types'
 
 export default async function ProtectedLayout({ children }: { children: React.ReactNode }) {
@@ -14,13 +15,18 @@ export default async function ProtectedLayout({ children }: { children: React.Re
   let initialPolicies: Policy[] = []
   let initialContacts: Contact[] = []
   let initialSharedPolicies: SharedPolicy[] = []
+  let userName: string | null = null
 
   if (!isDemo && sessionData?.phone) {
     try {
-      const data = await getUserData(sessionData.phone)
+      const [data, name] = await Promise.all([
+        getUserData(sessionData.phone),
+        getUserName(sessionData.phone),
+      ])
       initialPolicies = data.policies
       initialContacts = data.contacts
       initialSharedPolicies = data.sharedPolicies
+      userName = name
     } catch {
       // Non-fatal: render with empty data
     }
@@ -30,6 +36,7 @@ export default async function ProtectedLayout({ children }: { children: React.Re
     <AppDataProvider
       isDemo={isDemo}
       userPhone={sessionData?.phone ?? ''}
+      userName={userName}
       initialPolicies={initialPolicies}
       initialContacts={initialContacts}
       initialSharedPolicies={initialSharedPolicies}

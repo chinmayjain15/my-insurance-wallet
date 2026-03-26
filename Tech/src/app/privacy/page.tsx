@@ -4,7 +4,7 @@ import BackButton from '@/components/ui/BackButton'
 export default function PrivacyPolicyPage() {
   return (
     <div className="min-h-screen bg-background pb-8">
-      <div className="sticky top-0 z-10 bg-background border-b border-border">
+      <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-sm border-b border-border">
         <div className="max-w-lg mx-auto px-6 py-4 flex items-center justify-between">
           <BackButton />
           <h1 className="text-foreground">Privacy Policy</h1>

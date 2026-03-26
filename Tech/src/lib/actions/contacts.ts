@@ -54,3 +54,42 @@ export async function addContact(
   revalidatePath('/', 'layout')
   redirect(returnTo)
 }
+
+export async function deleteContact(contactId: string): Promise<{ error: string }> {
+  const cookieStore = await cookies()
+  const session = cookieStore.get(STAGING_COOKIE)
+  if (!session) return { error: 'Not authenticated' }
+
+  const { phone } = JSON.parse(session.value)
+
+  try {
+    const supabase = createServiceClient()
+    const ownerId = await getUserId(phone)
+    if (!ownerId) return { error: 'User not found' }
+
+    // Verify this contact belongs to the user
+    const { data: contact } = await supabase
+      .from('contacts')
+      .select('id')
+      .eq('id', contactId)
+      .eq('owner_id', ownerId)
+      .single()
+    if (!contact) return { error: 'Contact not found' }
+
+    // Revoke all shared policy access for this contact
+    await supabase.from('policy_shares').delete().eq('contact_id', contactId)
+
+    const { error } = await supabase
+      .from('contacts')
+      .delete()
+      .eq('id', contactId)
+      .eq('owner_id', ownerId)
+
+    if (error) return { error: `Failed to remove contact: ${error.message}` }
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : 'Unexpected error' }
+  }
+
+  revalidatePath('/', 'layout')
+  return { error: '' }
+}

@@ -14,7 +14,7 @@ interface HamburgerMenuProps {
 
 export default function HamburgerMenu({ isOpen, onClose }: HamburgerMenuProps) {
   const { theme, toggleTheme } = useTheme()
-  const { userPhone } = useAppData()
+  const { userPhone, userName } = useAppData()
 
   if (!isOpen) return null
 
@@ -29,12 +29,6 @@ export default function HamburgerMenu({ isOpen, onClose }: HamburgerMenuProps) {
     onClose()
   }
 
-  const menuItems = [
-    { icon: User, label: 'My Profile', href: '/profile' },
-    { icon: Users, label: 'My Contacts', href: '/contacts' },
-    { icon: Settings, label: 'Settings', href: '/settings' },
-  ]
-
   return (
     <div className="fixed inset-0 bg-black/50 z-50" onClick={onClose}>
       <div
@@ -43,46 +37,37 @@ export default function HamburgerMenu({ isOpen, onClose }: HamburgerMenuProps) {
       >
         {/* Header */}
         <div className="p-6 border-b border-border">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg">Menu</h2>
+          <div className="flex items-center justify-between">
+            <div className="flex-1 min-w-0">
+              {userName && (
+                <p className="font-medium text-foreground truncate">{userName}</p>
+              )}
+              {userPhone && (
+                <p className="text-sm text-muted-foreground">+91 {userPhone}</p>
+              )}
+            </div>
             <button
               onClick={onClose}
-              className="p-2 -mr-2 text-muted-foreground hover:text-foreground transition-colors rounded-lg hover:bg-accent"
+              className="p-2 -mr-2 text-muted-foreground hover:text-foreground transition-colors rounded-lg hover:bg-accent shrink-0"
             >
               <X className="w-5 h-5" />
             </button>
           </div>
-          {userPhone && (
-            <div className="bg-accent/50 rounded-lg p-3">
-              <p className="text-sm text-muted-foreground">+91 {userPhone}</p>
-            </div>
-          )}
         </div>
 
         {/* Menu Items */}
         <div className="p-4 space-y-1">
-          {menuItems.map(({ icon: Icon, label, href }) => (
-            <Link
-              key={href}
-              href={href}
-              onClick={onClose}
-              className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-accent transition-colors"
-            >
-              <Icon className="w-5 h-5 text-muted-foreground" />
-              <span className="text-foreground">{label}</span>
-            </Link>
-          ))}
+          {/* My Profile */}
+          <Link href="/profile" onClick={onClose} className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-accent transition-colors">
+            <User className="w-5 h-5 text-muted-foreground" />
+            <span className="text-foreground">My Profile</span>
+          </Link>
 
-          {/* Log Out */}
-          <form action={signOut}>
-            <button
-              type="submit"
-              className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-accent transition-colors text-left"
-            >
-              <LogOut className="w-5 h-5 text-muted-foreground" />
-              <span className="text-foreground">Log Out</span>
-            </button>
-          </form>
+          {/* My Contacts */}
+          <Link href="/contacts" onClick={onClose} className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-accent transition-colors">
+            <Users className="w-5 h-5 text-muted-foreground" />
+            <span className="text-foreground">My Contacts</span>
+          </Link>
 
           {/* Appearance toggle */}
           <button
@@ -108,9 +93,15 @@ export default function HamburgerMenu({ isOpen, onClose }: HamburgerMenuProps) {
               </div>
             </div>
           </button>
+
+          {/* Settings */}
+          <Link href="/settings" onClick={onClose} className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-accent transition-colors">
+            <Settings className="w-5 h-5 text-muted-foreground" />
+            <span className="text-foreground">Settings</span>
+          </Link>
         </div>
 
-        {/* Bottom: Refer + Legal — pinned */}
+        {/* Bottom: Refer + Legal + Log Out — pinned */}
         <div className="absolute bottom-20 left-0 right-0 p-4">
           <button
             onClick={handleReferShare}
@@ -137,6 +128,15 @@ export default function HamburgerMenu({ isOpen, onClose }: HamburgerMenuProps) {
               <Shield className="w-4 h-4 text-muted-foreground" />
               <span className="text-sm text-muted-foreground">Privacy Policy</span>
             </Link>
+            <form action={signOut}>
+              <button
+                type="submit"
+                className="w-full flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-accent transition-colors text-left"
+              >
+                <LogOut className="w-4 h-4 text-muted-foreground" />
+                <span className="text-sm text-muted-foreground">Log Out</span>
+              </button>
+            </form>
           </div>
         </div>
       </div>

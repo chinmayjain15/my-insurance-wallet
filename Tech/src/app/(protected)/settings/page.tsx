@@ -2,7 +2,8 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Moon, Sun, LogOut, ArrowLeft, Shield, Trash2, Loader2 } from 'lucide-react'
+import Link from 'next/link'
+import { Moon, Sun, LogOut, ArrowLeft, Shield, Trash2, Loader2, Edit3 } from 'lucide-react'
 import { useActionState } from 'react'
 import { signOut, deleteAccount } from '@/lib/actions/auth'
 import { useTheme } from '@/components/ThemeProvider'
@@ -10,7 +11,7 @@ import { useAppData } from '@/components/AppDataProvider'
 
 export default function SettingsPage() {
   const { theme, toggleTheme } = useTheme()
-  const { userPhone } = useAppData()
+  const { userPhone, userName } = useAppData()
   const router = useRouter()
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleteOtp, setDeleteOtp] = useState('')
@@ -19,17 +20,20 @@ export default function SettingsPage() {
   return (
     <div className="min-h-screen pb-4">
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-background border-b border-border">
-        <div className="max-w-lg mx-auto px-6 py-4 flex items-center justify-between">
-          <button
-            onClick={() => router.back()}
-            className="p-2 -ml-2 text-muted-foreground hover:text-foreground transition-colors rounded-lg hover:bg-accent"
-            aria-label="Go back"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-          <h1 className="text-foreground">Settings</h1>
-          <div className="w-9" />
+      <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-sm border-b border-border">
+        <div className="max-w-lg mx-auto px-6 py-4">
+          <div className="flex items-center justify-between mb-1">
+            <button
+              onClick={() => router.back()}
+              className="p-2 -ml-2 text-muted-foreground hover:text-foreground transition-colors rounded-lg hover:bg-accent"
+              aria-label="Go back"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+            <h1 className="text-foreground">Settings</h1>
+            <div className="w-9" />
+          </div>
+          <p className="text-sm text-muted-foreground text-center">Manage your account and preferences</p>
         </div>
       </div>
 
@@ -40,13 +44,23 @@ export default function SettingsPage() {
           <div>
             <h3 className="mb-3">Account</h3>
             <div className="bg-card border border-border rounded-xl p-4">
-              <div className="flex items-center gap-3">
-                <div className="bg-accent rounded-full p-2.5 shrink-0">
-                  <Shield className="w-5 h-5 text-primary" />
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="bg-accent rounded-full p-2.5 shrink-0">
+                    <Shield className="w-5 h-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-foreground">
+                      {userName ?? <span className="text-muted-foreground italic">Enter your name</span>}
+                    </p>
+                    <p className="text-sm text-muted-foreground">+91 {userPhone}</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">+91 {userPhone}</p>
-                </div>
+                {!userName && (
+                  <Link href="/profile" className="p-2 rounded-lg hover:bg-accent transition-colors">
+                    <Edit3 className="w-4 h-4 text-muted-foreground" />
+                  </Link>
+                )}
               </div>
             </div>
           </div>

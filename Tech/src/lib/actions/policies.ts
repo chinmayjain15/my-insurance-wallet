@@ -187,6 +187,85 @@ export async function deletePolicy(policyId: string): Promise<{ error: string }>
   return { error: '' }
 }
 
+export async function updatePolicyName(policyId: string, name: string): Promise<{ error: string }> {
+  const trimmed = name.trim()
+  if (!trimmed) return { error: 'Name is required' }
+
+  const cookieStore = await cookies()
+  const session = cookieStore.get(STAGING_COOKIE)
+  if (!session) return { error: 'Not authenticated' }
+
+  const { phone } = JSON.parse(session.value)
+
+  try {
+    const supabase = createServiceClient()
+    const userId = await getOwnerUserId(phone)
+    if (!userId) return { error: 'User not found' }
+
+    const { error } = await supabase
+      .from('policies')
+      .update({ name: trimmed })
+      .eq('id', policyId)
+      .eq('user_id', userId)
+
+    if (error) return { error: `Failed to update: ${error.message}` }
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : 'Unexpected error' }
+  }
+
+  revalidatePath('/', 'layout')
+  return { error: '' }
+}
+
+export async function getSharedPolicySignedUrl(policyId: string): Promise<{ url: string; error: string }> {
+  const cookieStore = await cookies()
+  const session = cookieStore.get(STAGING_COOKIE)
+  if (!session) return { url: '', error: 'Not authenticated' }
+
+  const { phone } = JSON.parse(session.value)
+
+  try {
+    const supabase = createServiceClient()
+
+    // Find all contact entries for this phone number
+    const { data: meAsContact } = await supabase
+      .from('contacts')
+      .select('id')
+      .eq('phone', phone)
+
+    const contactIds = (meAsContact ?? []).map(c => c.id)
+    if (contactIds.length === 0) return { url: '', error: 'No access to this policy' }
+
+    // Verify this policy was shared with one of our contact entries
+    const { data: share } = await supabase
+      .from('policy_shares')
+      .select('policy_id')
+      .eq('policy_id', policyId)
+      .in('contact_id', contactIds)
+      .single()
+
+    if (!share) return { url: '', error: 'No access to this policy' }
+
+    const { data: policy } = await supabase
+      .from('policies')
+      .select('file_url')
+      .eq('id', policyId)
+      .single()
+
+    if (!policy?.file_url) return { url: '', error: 'Document not found' }
+
+    const { data, error } = await supabase.storage
+      .from('policies')
+      .createSignedUrl(policy.file_url, 3600)
+
+    if (error || !data) return { url: '', error: 'Could not generate document link' }
+
+    return { url: data.signedUrl, error: '' }
+  } catch (err) {
+    return { url: '', error: err instanceof Error ? err.message : 'Unexpected error' }
+  }
+}
+
 export async function unsharePolicy(policyId: string, contactId: string): Promise<{ error: string }> {
   const cookieStore = await cookies()
   const session = cookieStore.get(STAGING_COOKIE)

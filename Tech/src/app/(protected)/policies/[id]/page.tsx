@@ -1,10 +1,10 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useTransition, use } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Eye, Share2, Edit3 } from 'lucide-react'
+import { ArrowLeft, Eye, Share2, Edit3, Heart, FileText, Car, Activity } from 'lucide-react'
 import { useAppData } from '@/components/AppDataProvider'
-import { unsharePolicy, deletePolicy } from '@/lib/actions/policies'
+import { unsharePolicy, deletePolicy, updatePolicyName } from '@/lib/actions/policies'
 import { PolicyType } from '@/types'
 import Link from 'next/link'
 
@@ -16,15 +16,25 @@ const TYPE_COLORS: Record<PolicyType, { bg: string; text: string }> = {
   Other:   { bg: 'bg-[var(--other)]',    text: 'text-[var(--other-foreground)]' },
 }
 
-export default function PolicyDetailPage({ params }: { params: { id: string } }) {
+const TYPE_ICONS: Record<PolicyType, React.ElementType> = {
+  Health:  Activity,
+  Life:    Heart,
+  Term:    FileText,
+  Vehicle: Car,
+  Other:   FileText,
+}
+
+export default function PolicyDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params)
   const router = useRouter()
   const { policies, contacts, isDemo } = useAppData()
   const [isPending, startTransition] = useTransition()
   const [isEditing, setIsEditing] = useState(false)
   const [editedName, setEditedName] = useState('')
+  const [nameError, setNameError] = useState('')
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
-  const policy = policies.find(p => p.id === params.id)
+  const policy = policies.find(p => p.id === id)
 
   if (!policy) {
     return (
@@ -38,10 +48,11 @@ export default function PolicyDetailPage({ params }: { params: { id: string } })
   }
 
   const colors = TYPE_COLORS[policy.type]
+  const Icon = TYPE_ICONS[policy.type]
   const sharedContacts = contacts.filter(c => policy.sharedWith.includes(c.id))
 
   function handleUnshare(contactId: string) {
-    if (isDemo) return
+    if (isDemo || !policy) return
     startTransition(async () => {
       await unsharePolicy(policy.id, contactId)
       router.refresh()
@@ -49,7 +60,7 @@ export default function PolicyDetailPage({ params }: { params: { id: string } })
   }
 
   function handleDelete() {
-    if (isDemo) { router.push('/policies'); return }
+    if (isDemo || !policy) { router.push('/policies'); return }
     startTransition(async () => {
       await deletePolicy(policy.id)
       router.push('/policies')
@@ -60,19 +71,16 @@ export default function PolicyDetailPage({ params }: { params: { id: string } })
   return (
     <div className="min-h-screen pb-8">
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-background border-b border-border">
+      <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-sm border-b border-border">
         <div className="max-w-lg mx-auto px-6 py-4 flex items-center justify-between">
           <button
             onClick={() => router.back()}
-            className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+            className="p-2 -ml-2 text-muted-foreground hover:text-foreground transition-colors rounded-lg hover:bg-accent"
           >
             <ArrowLeft className="w-5 h-5" />
-            <span className="text-sm">Back</span>
           </button>
-          <button onClick={() => router.push(`/policies/${params.id}/view`)} className="text-primary hover:underline text-sm flex items-center gap-1.5">
-            <Eye className="w-4 h-4" />
-            View Document
-          </button>
+          <h1 className="text-lg text-foreground">Policy Details</h1>
+          <div className="w-9" />
         </div>
       </div>
 
@@ -89,15 +97,26 @@ export default function PolicyDetailPage({ params }: { params: { id: string } })
                 className="w-full bg-input border border-border rounded-lg px-3 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
                 autoFocus
               />
+              {nameError && <p className="text-xs text-destructive">{nameError}</p>}
               <div className="flex gap-2">
                 <button
-                  onClick={() => setIsEditing(false)}
-                  className="flex-1 bg-primary text-primary-foreground rounded-lg px-4 py-2 text-sm font-medium hover:opacity-90"
+                  disabled={isPending}
+                  onClick={() => {
+                    if (isDemo) { setIsEditing(false); return }
+                    setNameError('')
+                    startTransition(async () => {
+                      const result = await updatePolicyName(policy.id, editedName)
+                      if (result.error) { setNameError(result.error); return }
+                      setIsEditing(false)
+                      router.refresh()
+                    })
+                  }}
+                  className="flex-1 bg-primary text-primary-foreground rounded-lg px-4 py-2 text-sm font-medium hover:opacity-90 disabled:opacity-50"
                 >
                   Save
                 </button>
                 <button
-                  onClick={() => { setIsEditing(false); setEditedName(policy.name) }}
+                  onClick={() => { setIsEditing(false); setEditedName(policy.name); setNameError('') }}
                   className="flex-1 bg-muted text-foreground rounded-lg px-4 py-2 text-sm font-medium"
                 >
                   Cancel
@@ -106,16 +125,19 @@ export default function PolicyDetailPage({ params }: { params: { id: string } })
             </div>
           ) : (
             <>
-              <div className="flex items-start justify-between gap-3 mb-4">
-                <div className="flex-1">
-                  <h2 className="mb-1 text-foreground">{policy.name}</h2>
-                  <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-sm ${colors.bg} ${colors.text}`}>
-                    {policy.type}
-                  </span>
+              <div className="flex items-start gap-4 mb-4">
+                <div className="flex flex-col items-center gap-1.5 shrink-0">
+                  <div className={`${colors.bg} ${colors.text} w-10 h-10 rounded-lg flex items-center justify-center`}>
+                    <Icon className="w-5 h-5" />
+                  </div>
+                  <span className={`${colors.text} text-xs font-medium`}>{policy.type}</span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h2 className="text-foreground break-words">{policy.name}</h2>
                 </div>
                 <button
                   onClick={() => { setEditedName(policy.name); setIsEditing(true) }}
-                  className="p-2 rounded-lg hover:bg-accent transition-colors"
+                  className="p-2 rounded-lg hover:bg-accent transition-colors shrink-0"
                 >
                   <Edit3 className="w-4 h-4 text-muted-foreground" />
                 </button>
@@ -150,7 +172,9 @@ export default function PolicyDetailPage({ params }: { params: { id: string } })
                 <div key={contact.id} className="bg-card border border-border rounded-xl p-3 flex items-center justify-between">
                   <div>
                     <p className="font-medium text-foreground">{contact.name}</p>
-                    <p className="text-xs text-muted-foreground">+91 {contact.phone}</p>
+                    <p className="text-xs text-muted-foreground">
+                      Shared on {new Date(contact.addedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                    </p>
                   </div>
                   <button
                     onClick={() => handleUnshare(contact.id)}
@@ -192,7 +216,7 @@ export default function PolicyDetailPage({ params }: { params: { id: string } })
 
         {/* Actions */}
         <div className="space-y-3">
-          <button onClick={() => router.push(`/policies/${params.id}/view`)} className="w-full bg-primary text-primary-foreground rounded-xl px-6 py-3 font-medium hover:opacity-90 transition-opacity flex items-center justify-center gap-2">
+          <button onClick={() => router.push(`/policies/${id}/view`)} className="w-full bg-primary text-primary-foreground rounded-xl px-6 py-3 font-medium hover:opacity-90 transition-opacity flex items-center justify-center gap-2">
             <Eye className="w-4 h-4" />
             View Document
           </button>
