@@ -6,14 +6,21 @@ import { revalidatePath } from 'next/cache'
 import { STAGING_COOKIE } from '@/lib/constants'
 import { createServiceClient } from '@/lib/supabase/service'
 
-async function getUserId(email: string): Promise<string | null> {
+async function getOrCreateUser(email: string): Promise<string | null> {
   const supabase = createServiceClient()
-  const { data } = await supabase
+  const { data: existing } = await supabase
     .from('users')
     .select('id')
     .eq('email', email)
     .single()
-  return data?.id ?? null
+  if (existing) return existing.id
+
+  const { data: created } = await supabase
+    .from('users')
+    .insert({ email, consent_given: true, consent_given_at: new Date().toISOString() })
+    .select('id')
+    .single()
+  return created?.id ?? null
 }
 
 export async function addContact(
@@ -37,7 +44,7 @@ export async function addContact(
 
   try {
     const supabase = createServiceClient()
-    const ownerId = await getUserId(ownerEmail)
+    const ownerId = await getOrCreateUser(ownerEmail)
     if (!ownerId) return { error: 'User not found. Please sign in again.' }
 
     const { error } = await supabase
@@ -65,7 +72,7 @@ export async function deleteContact(contactId: string): Promise<{ error: string 
 
   try {
     const supabase = createServiceClient()
-    const ownerId = await getUserId(email)
+    const ownerId = await getOrCreateUser(email)
     if (!ownerId) return { error: 'User not found' }
 
     const { data: contact } = await supabase

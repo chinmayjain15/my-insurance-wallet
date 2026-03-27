@@ -8,21 +8,21 @@ import { createServiceClient } from '@/lib/supabase/service'
 
 const VALID_TYPES = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg']
 
-// Get or create a user row by phone number. Returns the user ID.
-async function getOrCreateUser(phone: string): Promise<string> {
+// Get or create a user row by email address. Returns the user ID.
+async function getOrCreateUser(email: string): Promise<string> {
   const supabase = createServiceClient()
 
   const { data: existing } = await supabase
     .from('users')
     .select('id')
-    .eq('phone', phone)
+    .eq('email', email)
     .single()
 
   if (existing) return existing.id
 
   const { data: created, error } = await supabase
     .from('users')
-    .insert({ phone, consent_given: true, consent_given_at: new Date().toISOString() })
+    .insert({ email, consent_given: true, consent_given_at: new Date().toISOString() })
     .select('id')
     .single()
 
@@ -48,11 +48,11 @@ export async function uploadPolicy(
   const session = cookieStore.get(STAGING_COOKIE)
   if (!session) return { error: 'Not authenticated' }
 
-  const { phone } = JSON.parse(session.value)
+  const { email } = JSON.parse(session.value)
 
   try {
     const supabase = createServiceClient()
-    const userId = await getOrCreateUser(phone)
+    const userId = await getOrCreateUser(email)
 
     // Build a unique storage path: {userId}/{timestamp}-{random}.{ext}
     const ext = file.name.split('.').pop() ?? 'pdf'
@@ -84,9 +84,9 @@ export async function uploadPolicy(
   redirect('/policies')
 }
 
-async function getOwnerUserId(phone: string): Promise<string | null> {
+async function getOwnerUserId(email: string): Promise<string | null> {
   const supabase = createServiceClient()
-  const { data } = await supabase.from('users').select('id').eq('phone', phone).single()
+  const { data } = await supabase.from('users').select('id').eq('email', email).single()
   return data?.id ?? null
 }
 
@@ -95,11 +95,11 @@ export async function sharePolicy(policyId: string, contactId: string): Promise<
   const session = cookieStore.get(STAGING_COOKIE)
   if (!session) return { error: 'Not authenticated' }
 
-  const { phone } = JSON.parse(session.value)
+  const { email } = JSON.parse(session.value)
 
   try {
     const supabase = createServiceClient()
-    const userId = await getOwnerUserId(phone)
+    const userId = await getOwnerUserId(email)
     if (!userId) return { error: 'User not found' }
 
     // Verify the policy belongs to this user
@@ -132,11 +132,11 @@ export async function getSignedUrl(policyId: string): Promise<{ url: string; err
   const session = cookieStore.get(STAGING_COOKIE)
   if (!session) return { url: '', error: 'Not authenticated' }
 
-  const { phone } = JSON.parse(session.value)
+  const { email } = JSON.parse(session.value)
 
   try {
     const supabase = createServiceClient()
-    const userId = await getOwnerUserId(phone)
+    const userId = await getOwnerUserId(email)
     if (!userId) return { url: '', error: 'User not found' }
 
     const { data: policy } = await supabase
@@ -165,11 +165,11 @@ export async function deletePolicy(policyId: string): Promise<{ error: string }>
   const session = cookieStore.get(STAGING_COOKIE)
   if (!session) return { error: 'Not authenticated' }
 
-  const { phone } = JSON.parse(session.value)
+  const { email } = JSON.parse(session.value)
 
   try {
     const supabase = createServiceClient()
-    const userId = await getOwnerUserId(phone)
+    const userId = await getOwnerUserId(email)
     if (!userId) return { error: 'User not found' }
 
     const { error } = await supabase
@@ -195,11 +195,11 @@ export async function updatePolicyName(policyId: string, name: string): Promise<
   const session = cookieStore.get(STAGING_COOKIE)
   if (!session) return { error: 'Not authenticated' }
 
-  const { phone } = JSON.parse(session.value)
+  const { email } = JSON.parse(session.value)
 
   try {
     const supabase = createServiceClient()
-    const userId = await getOwnerUserId(phone)
+    const userId = await getOwnerUserId(email)
     if (!userId) return { error: 'User not found' }
 
     const { error } = await supabase
@@ -222,16 +222,16 @@ export async function getSharedPolicySignedUrl(policyId: string): Promise<{ url:
   const session = cookieStore.get(STAGING_COOKIE)
   if (!session) return { url: '', error: 'Not authenticated' }
 
-  const { phone } = JSON.parse(session.value)
+  const { email } = JSON.parse(session.value)
 
   try {
     const supabase = createServiceClient()
 
-    // Find all contact entries for this phone number
+    // Find all contact entries for this email address
     const { data: meAsContact } = await supabase
       .from('contacts')
       .select('id')
-      .eq('phone', phone)
+      .eq('email', email)
 
     const contactIds = (meAsContact ?? []).map(c => c.id)
     if (contactIds.length === 0) return { url: '', error: 'No access to this policy' }
@@ -271,11 +271,11 @@ export async function unsharePolicy(policyId: string, contactId: string): Promis
   const session = cookieStore.get(STAGING_COOKIE)
   if (!session) return { error: 'Not authenticated' }
 
-  const { phone } = JSON.parse(session.value)
+  const { email } = JSON.parse(session.value)
 
   try {
     const supabase = createServiceClient()
-    const userId = await getOwnerUserId(phone)
+    const userId = await getOwnerUserId(email)
     if (!userId) return { error: 'User not found' }
 
     // Verify the policy belongs to this user
