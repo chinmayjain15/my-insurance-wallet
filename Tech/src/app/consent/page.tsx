@@ -52,7 +52,7 @@ export default function ConsentPage() {
               <div>
                 <h4 className="mb-1 text-foreground">Data We Collect</h4>
                 <p className="text-sm text-muted-foreground leading-relaxed">
-                  We collect your phone number for authentication, and the insurance policy documents you choose to upload. We also store the names and phone numbers of contacts you add for sharing purposes.
+                  We collect your email address for authentication, and the insurance policy documents you choose to upload. We also store the names and email addresses of contacts you add for sharing purposes.
                 </p>
               </div>
             </div>

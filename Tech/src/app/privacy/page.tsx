@@ -23,7 +23,7 @@ export default function PrivacyPolicyPage() {
           <div className="space-y-2">
             <h3 className="text-base">Information We Collect</h3>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              We collect information you provide directly to us, including your phone number, name, and insurance policy documents you choose to upload. We also collect basic usage data to improve the service.
+              We collect information you provide directly to us, including your email address, name, and insurance policy documents you choose to upload. We also collect basic usage data to improve the service.
             </p>
           </div>
 
