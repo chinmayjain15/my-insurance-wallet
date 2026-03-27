@@ -6,12 +6,12 @@ import { revalidatePath } from 'next/cache'
 import { STAGING_COOKIE } from '@/lib/constants'
 import { createServiceClient } from '@/lib/supabase/service'
 
-async function getUserId(phone: string): Promise<string | null> {
+async function getUserId(email: string): Promise<string | null> {
   const supabase = createServiceClient()
   const { data } = await supabase
     .from('users')
     .select('id')
-    .eq('phone', phone)
+    .eq('email', email)
     .single()
   return data?.id ?? null
 }
@@ -21,27 +21,28 @@ export async function addContact(
   formData: FormData
 ): Promise<{ error: string }> {
   const name     = (formData.get('name') as string)?.trim()
-  const phone    = (formData.get('phone') as string)?.trim()
+  const email    = (formData.get('email') as string)?.trim().toLowerCase()
   const returnTo = (formData.get('returnTo') as string)?.trim() || '/contacts'
 
-  if (!name)                         return { error: 'Name is required' }
-  if (!phone || phone.length !== 10) return { error: 'Enter a valid 10-digit mobile number' }
-  if (!/^\d{10}$/.test(phone))       return { error: 'Phone number must be digits only' }
+  if (!name) return { error: 'Name is required' }
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return { error: 'Please enter a valid email address' }
+  }
 
   const cookieStore = await cookies()
   const session = cookieStore.get(STAGING_COOKIE)
   if (!session) return { error: 'Not authenticated' }
 
-  const { phone: ownerPhone } = JSON.parse(session.value)
+  const { email: ownerEmail } = JSON.parse(session.value)
 
   try {
     const supabase = createServiceClient()
-    const ownerId = await getUserId(ownerPhone)
+    const ownerId = await getUserId(ownerEmail)
     if (!ownerId) return { error: 'User not found. Please sign in again.' }
 
     const { error } = await supabase
       .from('contacts')
-      .insert({ owner_id: ownerId, name, phone })
+      .insert({ owner_id: ownerId, name, email })
 
     if (error) {
       if (error.code === '23505') return { error: 'This contact already exists' }
@@ -60,14 +61,13 @@ export async function deleteContact(contactId: string): Promise<{ error: string 
   const session = cookieStore.get(STAGING_COOKIE)
   if (!session) return { error: 'Not authenticated' }
 
-  const { phone } = JSON.parse(session.value)
+  const { email } = JSON.parse(session.value)
 
   try {
     const supabase = createServiceClient()
-    const ownerId = await getUserId(phone)
+    const ownerId = await getUserId(email)
     if (!ownerId) return { error: 'User not found' }
 
-    // Verify this contact belongs to the user
     const { data: contact } = await supabase
       .from('contacts')
       .select('id')
@@ -76,7 +76,6 @@ export async function deleteContact(contactId: string): Promise<{ error: string 
       .single()
     if (!contact) return { error: 'Contact not found' }
 
-    // Revoke all shared policy access for this contact
     await supabase.from('policy_shares').delete().eq('contact_id', contactId)
 
     const { error } = await supabase

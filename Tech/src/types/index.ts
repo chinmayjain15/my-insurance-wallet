@@ -13,7 +13,7 @@ export interface Policy {
 export interface Contact {
   id: string
   name: string
-  phone: string
+  email: string
   addedAt: string // ISO string
 }
 
@@ -25,5 +25,5 @@ export interface SharedPolicy {
   fileUrl?: string
   uploadedAt: string
   sharedBy: string
-  sharedByPhone: string
+  sharedByEmail: string
 }

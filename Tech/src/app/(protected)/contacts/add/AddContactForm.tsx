@@ -49,27 +49,21 @@ export default function AddContactForm({ returnTo }: { returnTo: string }) {
             />
           </div>
 
-          {/* Phone */}
+          {/* Email */}
           <div>
-            <label htmlFor="phone" className="block text-sm font-medium text-foreground mb-2">
-              Phone number
+            <label htmlFor="email" className="block text-sm font-medium text-foreground mb-2">
+              Email address
             </label>
-            <div className="flex gap-2">
-              <div className="flex items-center bg-muted border border-border rounded-xl px-3 py-3 text-muted-foreground text-sm font-medium">
-                +91
-              </div>
-              <input
-                id="phone"
-                name="phone"
-                type="tel"
-                inputMode="numeric"
-                maxLength={10}
-                placeholder="10-digit mobile number"
-                className="flex-1 bg-card border border-border rounded-xl px-4 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
-              />
-            </div>
+            <input
+              id="email"
+              name="email"
+              type="email"
+              inputMode="email"
+              placeholder="e.g. priya@example.com"
+              className="w-full bg-card border border-border rounded-xl px-4 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
+            />
             <p className="mt-2 text-xs text-muted-foreground">
-              They will receive an SMS when you share a policy with them
+              They will receive an email when you share a policy with them
             </p>
           </div>
 
@@ -80,7 +74,7 @@ export default function AddContactForm({ returnTo }: { returnTo: string }) {
               {[
                 'Your contact will be added to your list',
                 'You can choose which policies to share with them',
-                "They'll receive an SMS notification when you share a policy",
+                "They'll receive an email notification when you share a policy",
                 'You can revoke access anytime',
               ].map(item => (
                 <li key={item} className="flex items-start gap-2">

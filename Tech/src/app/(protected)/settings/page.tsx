@@ -11,7 +11,7 @@ import { useAppData } from '@/components/AppDataProvider'
 
 export default function SettingsPage() {
   const { theme, toggleTheme } = useTheme()
-  const { userPhone, userName } = useAppData()
+  const { userEmail, userName } = useAppData()
   const router = useRouter()
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleteOtp, setDeleteOtp] = useState('')
@@ -40,7 +40,7 @@ export default function SettingsPage() {
       <div className="max-w-lg mx-auto px-6 py-6 space-y-6">
 
         {/* Account */}
-        {userPhone && (
+        {userEmail && (
           <div>
             <h3 className="mb-3">Account</h3>
             <div className="bg-card border border-border rounded-xl p-4">
@@ -53,7 +53,7 @@ export default function SettingsPage() {
                     <p className="font-medium text-foreground">
                       {userName ?? <span className="text-muted-foreground italic">Enter your name</span>}
                     </p>
-                    <p className="text-sm text-muted-foreground">+91 {userPhone}</p>
+                    <p className="text-sm text-muted-foreground">{userEmail}</p>
                   </div>
                 </div>
                 {!userName && (

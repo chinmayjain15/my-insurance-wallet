@@ -143,7 +143,7 @@ export default function SharePolicyPage({ params }: { params: Promise<{ id: stri
                       <div>
                         <p className="font-medium text-foreground">{contact.name}</p>
                         <p className="text-sm text-muted-foreground">
-                          +91 {contact.phone}
+                          {contact.email}
                           {wasShared && (
                             <span className="ml-2 text-xs text-primary">• Already shared</span>
                           )}

@@ -18,14 +18,14 @@ export async function updateUserName(
   const session = cookieStore.get(STAGING_COOKIE)
   if (!session) return { error: 'Not authenticated', success: false }
 
-  const { phone } = JSON.parse(session.value)
+  const { email } = JSON.parse(session.value)
 
   try {
     const supabase = createServiceClient()
     const { error } = await supabase
       .from('users')
       .update({ name })
-      .eq('phone', phone)
+      .eq('email', email)
 
     if (error) return { error: error.message, success: false }
   } catch {
@@ -36,12 +36,12 @@ export async function updateUserName(
   return { error: '', success: true }
 }
 
-export async function getUserName(phone: string): Promise<string | null> {
+export async function getUserName(email: string): Promise<string | null> {
   const supabase = createServiceClient()
   const { data } = await supabase
     .from('users')
     .select('name')
-    .eq('phone', phone)
+    .eq('email', email)
     .single()
   return data?.name ?? null
 }

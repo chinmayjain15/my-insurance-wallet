@@ -1,7 +1,7 @@
 import { createServiceClient } from '@/lib/supabase/service'
 import { Policy, Contact, SharedPolicy } from '@/types'
 
-export async function getUserData(phone: string): Promise<{
+export async function getUserData(email: string): Promise<{
   policies: Policy[]
   contacts: Contact[]
   sharedPolicies: SharedPolicy[]
@@ -10,8 +10,8 @@ export async function getUserData(phone: string): Promise<{
 
   // Run both in parallel — shared-with-me doesn't require a user row
   const [{ data: user }, { data: meAsContact }] = await Promise.all([
-    supabase.from('users').select('id').eq('phone', phone).single(),
-    supabase.from('contacts').select('id, owner_id').eq('phone', phone),
+    supabase.from('users').select('id').eq('email', email).single(),
+    supabase.from('contacts').select('id, owner_id').eq('email', email),
   ])
 
   // ── Own policies & contacts (only if user row exists) ──────────────────────
@@ -27,7 +27,7 @@ export async function getUserData(phone: string): Promise<{
         .order('created_at', { ascending: false }),
       supabase
         .from('contacts')
-        .select('id, name, phone, created_at')
+        .select('id, name, email, created_at')
         .eq('owner_id', user.id)
         .order('created_at', { ascending: false }),
     ])
@@ -61,7 +61,7 @@ export async function getUserData(phone: string): Promise<{
     contacts = (rawContacts ?? []).map(c => ({
       id: c.id,
       name: c.name,
-      phone: c.phone,
+      email: c.email,
       addedAt: c.created_at,
     }))
   }
@@ -88,7 +88,7 @@ export async function getUserData(phone: string): Promise<{
         const ownerIds = [...new Set((sharedPoliciesData ?? []).map(p => p.user_id))]
         const { data: owners } = await supabase
           .from('users')
-          .select('id, phone, name')
+          .select('id, email, name')
           .in('id', ownerIds)
 
         const ownerMap = Object.fromEntries((owners ?? []).map(o => [o.id, o]))
@@ -102,8 +102,8 @@ export async function getUserData(phone: string): Promise<{
             fileName: p.file_name,
             fileUrl: p.file_url ?? undefined,
             uploadedAt: p.created_at,
-            sharedBy: owner?.name ?? `+91 ${owner?.phone}`,
-            sharedByPhone: owner?.phone ?? '',
+            sharedBy: owner?.name ?? owner?.email ?? '',
+            sharedByEmail: owner?.email ?? '',
           }
         })
       }

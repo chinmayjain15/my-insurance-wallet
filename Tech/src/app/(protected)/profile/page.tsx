@@ -8,9 +8,9 @@ export default async function ProfilePage() {
   const cookieStore = await cookies()
   const session = cookieStore.get(STAGING_COOKIE)
   const sessionData = session ? JSON.parse(session.value) : null
-  const phone: string = sessionData?.phone ?? ''
+  const email: string = sessionData?.email ?? ''
 
-  const name = phone ? await getUserName(phone) : null
+  const name = email ? await getUserName(email) : null
 
   return (
     <div className="min-h-screen pb-24">
@@ -21,7 +21,7 @@ export default async function ProfilePage() {
           <div className="w-9" />
         </div>
       </div>
-      <ProfileEditor initialName={name} phone={phone} />
+      <ProfileEditor initialName={name} email={email} />
     </div>
   )
 }

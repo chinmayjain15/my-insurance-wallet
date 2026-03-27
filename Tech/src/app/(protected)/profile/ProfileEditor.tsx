@@ -2,15 +2,15 @@
 
 import { useState } from 'react'
 import { useActionState } from 'react'
-import { User, Phone, Edit3, Loader2 } from 'lucide-react'
+import { User, Mail, Edit3, Loader2 } from 'lucide-react'
 import { updateUserName } from '@/lib/actions/profile'
 
 export default function ProfileEditor({
   initialName,
-  phone,
+  email,
 }: {
   initialName: string | null
-  phone: string
+  email: string
 }) {
   const [isEditing, setIsEditing] = useState(false)
   const [state, formAction, isPending] = useActionState(updateUserName, { error: '', success: false })
@@ -93,12 +93,12 @@ export default function ProfileEditor({
               </button>
             </div>
 
-            {/* Phone row */}
+            {/* Email row */}
             <div className="flex items-center gap-3 py-3">
-              <Phone className="w-5 h-5 text-muted-foreground shrink-0" />
+              <Mail className="w-5 h-5 text-muted-foreground shrink-0" />
               <div>
-                <p className="text-sm text-muted-foreground">Phone</p>
-                <p className="font-medium text-foreground">+91 {phone}</p>
+                <p className="text-sm text-muted-foreground">Email</p>
+                <p className="font-medium text-foreground">{email}</p>
               </div>
             </div>
           </div>
@@ -108,7 +108,7 @@ export default function ProfileEditor({
       {/* Info note */}
       <div className="bg-accent/30 border border-border rounded-xl p-4">
         <p className="text-sm text-muted-foreground text-center">
-          Your phone number is used for authentication and cannot be changed.
+          Your email address is used for authentication and cannot be changed.
         </p>
       </div>
     </div>

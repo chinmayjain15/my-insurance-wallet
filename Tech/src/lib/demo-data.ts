@@ -71,19 +71,19 @@ export const DEMO_CONTACTS: Contact[] = [
   {
     id: 'contact_1',
     name: 'Priya Sharma',
-    phone: '9876543210',
+    email: 'priya.sharma@example.com',
     addedAt: '2024-01-15T00:00:00.000Z',
   },
   {
     id: 'contact_2',
     name: 'Rahul Kumar',
-    phone: '8765432109',
+    email: 'rahul.kumar@example.com',
     addedAt: '2024-02-01T00:00:00.000Z',
   },
   {
     id: 'contact_3',
     name: 'Mom',
-    phone: '7654321098',
+    email: 'mom@example.com',
     addedAt: '2024-01-20T00:00:00.000Z',
   },
 ]
@@ -96,7 +96,7 @@ export const DEMO_SHARED_POLICIES: SharedPolicy[] = [
     fileName: 'priya-health-insurance.pdf',
     uploadedAt: '2024-02-10T00:00:00.000Z',
     sharedBy: 'Priya Sharma',
-    sharedByPhone: '9876543210',
+    sharedByEmail: 'priya.sharma@example.com',
   },
   {
     id: 'shared_2',
@@ -105,7 +105,7 @@ export const DEMO_SHARED_POLICIES: SharedPolicy[] = [
     fileName: 'mom-life-insurance.pdf',
     uploadedAt: '2023-12-15T00:00:00.000Z',
     sharedBy: 'Mom',
-    sharedByPhone: '7654321098',
+    sharedByEmail: 'mom@example.com',
   },
   {
     id: 'shared_3',
@@ -114,6 +114,6 @@ export const DEMO_SHARED_POLICIES: SharedPolicy[] = [
     fileName: 'rahul-car-insurance.pdf',
     uploadedAt: '2024-01-20T00:00:00.000Z',
     sharedBy: 'Rahul Kumar',
-    sharedByPhone: '8765432109',
+    sharedByEmail: 'rahul.kumar@example.com',
   },
 ]

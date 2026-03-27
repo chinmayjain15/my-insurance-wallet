@@ -10,7 +10,7 @@ export default async function OtherPoliciesPage() {
   const cookieStore = await cookies()
   const session = cookieStore.get(STAGING_COOKIE)
   const sessionData = session ? JSON.parse(session.value) : null
-  const referrer: string = sessionData?.name ?? sessionData?.phone ?? 'friend'
+  const referrer: string = sessionData?.name ?? sessionData?.email ?? 'friend'
 
   return (
     <div className="min-h-screen pb-40">

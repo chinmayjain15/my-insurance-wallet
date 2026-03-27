@@ -7,35 +7,37 @@ import { createServiceClient } from '@/lib/supabase/service'
 
 const IS_STAGING = process.env.NEXT_PUBLIC_APP_ENV === 'staging'
 
-function isValidIndianMobile(phone: string): boolean {
-  return /^[6-9]\d{9}$/.test(phone)
+const COOKIE_OPTIONS = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: 'lax' as const,
+  maxAge: 60 * 60 * 24 * 7, // 7 days
+  path: '/',
 }
 
-export async function signInWithPhone(
+function isValidEmail(email: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+}
+
+// Staging-only: bypass with any email address
+export async function signInWithEmail(
   _prevState: { error: string },
   formData: FormData
 ): Promise<{ error: string }> {
-  const phone = (formData.get('phone') as string)?.trim()
+  if (!IS_STAGING) return { error: 'Not available in production' }
 
-  if (!phone || !isValidIndianMobile(phone)) {
-    return { error: 'Please enter a valid 10-digit mobile number' }
+  const email = (formData.get('email') as string)?.trim().toLowerCase()
+  if (!email || !isValidEmail(email)) {
+    return { error: 'Please enter a valid email address' }
   }
 
-  if (IS_STAGING) {
-    const cookieStore = await cookies()
-    cookieStore.set(STAGING_COOKIE, JSON.stringify({ phone, consentGiven: false, createdAt: Date.now() }), {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 7, // 7 days
-      path: '/',
-    })
-    redirect('/consent')
-  }
-
-  // Production: Supabase phone OTP
-  // TODO: implement when Supabase phone auth is configured
-  return { error: 'Production auth not yet configured' }
+  const cookieStore = await cookies()
+  cookieStore.set(
+    STAGING_COOKIE,
+    JSON.stringify({ email, consentGiven: false, createdAt: Date.now() }),
+    COOKIE_OPTIONS
+  )
+  redirect('/consent')
 }
 
 export async function acceptConsent(): Promise<void> {
@@ -43,25 +45,21 @@ export async function acceptConsent(): Promise<void> {
   const session = cookieStore.get(STAGING_COOKIE)
   if (!session) redirect('/auth')
   const data = JSON.parse(session.value)
-  cookieStore.set(STAGING_COOKIE, JSON.stringify({ ...data, consentGiven: true }), {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    maxAge: 60 * 60 * 24 * 7,
-    path: '/',
-  })
+  cookieStore.set(
+    STAGING_COOKIE,
+    JSON.stringify({ ...data, consentGiven: true }),
+    COOKIE_OPTIONS
+  )
   redirect('/home')
 }
 
 export async function demoSignIn(): Promise<void> {
   const cookieStore = await cookies()
-  cookieStore.set(STAGING_COOKIE, JSON.stringify({ phone: '9999999999', isDemo: true, consentGiven: true, createdAt: Date.now() }), {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    maxAge: 60 * 60 * 24 * 7,
-    path: '/',
-  })
+  cookieStore.set(
+    STAGING_COOKIE,
+    JSON.stringify({ email: 'demo@myinsurancewallet.com', isDemo: true, consentGiven: true, createdAt: Date.now() }),
+    COOKIE_OPTIONS
+  )
   redirect('/home')
 }
 
@@ -79,29 +77,24 @@ export async function deleteAccount(
   const session = cookieStore.get(STAGING_COOKIE)
   if (!session) return { error: 'Not authenticated' }
 
-  const { phone } = JSON.parse(session.value)
+  const { email } = JSON.parse(session.value)
 
   try {
     const supabase = createServiceClient()
-    const { data: user } = await supabase.from('users').select('id').eq('phone', phone).single()
+    const { data: user } = await supabase.from('users').select('id').eq('email', email).single()
 
     if (user) {
-      // Get policy IDs to clean up shares and storage
       const { data: policies } = await supabase
         .from('policies')
         .select('id, file_url')
         .eq('user_id', user.id)
 
       if (policies?.length) {
-        // Delete files from storage
         const paths = policies.filter(p => p.file_url).map(p => p.file_url as string)
         if (paths.length > 0) await supabase.storage.from('policies').remove(paths)
-
-        // Delete outbound policy_shares
         await supabase.from('policy_shares').delete().in('policy_id', policies.map(p => p.id))
       }
 
-      // Delete inbound shares (contacts owned by this user)
       const { data: contacts } = await supabase.from('contacts').select('id').eq('owner_id', user.id)
       if (contacts?.length) {
         await supabase.from('policy_shares').delete().in('contact_id', contacts.map(c => c.id))
@@ -122,13 +115,17 @@ export async function deleteAccount(
 
 export async function signOut(): Promise<void> {
   const cookieStore = await cookies()
+  cookieStore.delete(STAGING_COOKIE)
 
-  if (IS_STAGING) {
-    cookieStore.delete(STAGING_COOKIE)
-  } else {
-    const { createClient } = await import('@/lib/supabase/server')
-    const supabase = await createClient()
-    await supabase.auth.signOut()
+  // Also sign out from Supabase Auth (for Google SSO users)
+  if (!IS_STAGING) {
+    try {
+      const { createClient } = await import('@/lib/supabase/server')
+      const supabase = await createClient()
+      await supabase.auth.signOut()
+    } catch {
+      // Ignore — cookie deletion above is sufficient
+    }
   }
 
   redirect('/auth')

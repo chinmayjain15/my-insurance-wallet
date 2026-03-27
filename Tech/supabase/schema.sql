@@ -12,10 +12,10 @@ CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 -- =============================================================
 
 -- Users
--- One row per policyholder. Phone is the unique identifier.
+-- One row per policyholder. Email is the unique identifier.
 CREATE TABLE IF NOT EXISTS public.users (
   id               UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
-  phone            TEXT        UNIQUE NOT NULL,
+  email            TEXT        UNIQUE NOT NULL,
   name             TEXT,
   consent_given    BOOLEAN     NOT NULL DEFAULT FALSE,
   consent_given_at TIMESTAMPTZ,
@@ -36,14 +36,14 @@ CREATE TABLE IF NOT EXISTS public.policies (
 );
 
 -- Contacts
--- Trusted contacts added by a user. Phone must be unique per owner.
+-- Trusted contacts added by a user. Email must be unique per owner.
 CREATE TABLE IF NOT EXISTS public.contacts (
   id         UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   owner_id   UUID        NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
   name       TEXT        NOT NULL,
-  phone      TEXT        NOT NULL,
+  email      TEXT        NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  UNIQUE (owner_id, phone)
+  UNIQUE (owner_id, email)
 );
 
 -- Policy Shares
@@ -74,7 +74,7 @@ CREATE INDEX IF NOT EXISTS idx_policy_shares_token   ON public.policy_shares(acc
 -- =============================================================
 -- RLS is enabled on all tables.
 -- In staging, the server uses the service_role key which bypasses RLS.
--- These policies will enforce access correctly once Supabase phone auth is wired up.
+-- These policies will enforce access correctly once Supabase Google OAuth is wired up.
 
 ALTER TABLE public.users         ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.policies      ENABLE ROW LEVEL SECURITY;

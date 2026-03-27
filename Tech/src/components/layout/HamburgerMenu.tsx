@@ -14,14 +14,13 @@ interface HamburgerMenuProps {
 
 export default function HamburgerMenu({ isOpen, onClose }: HamburgerMenuProps) {
   const { theme, toggleTheme } = useTheme()
-  const { userPhone, userName } = useAppData()
+  const { userEmail, userName } = useAppData()
 
   if (!isOpen) return null
 
   function handleReferShare() {
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? window.location.origin
-    const utmReferrer = encodeURIComponent(userPhone || 'friend')
-    const appLink = `${baseUrl}?utm_source=referral&utm_medium=whatsapp&utm_referrer=${utmReferrer}`
+    const appLink = `${baseUrl}?utm_source=referral&utm_medium=whatsapp`
     const message = encodeURIComponent(
       `Hey! I use My Insurance Store to keep all my family's insurance policies organised in one place and share them easily. It's really handy — check it out: ${appLink}`
     )
@@ -42,8 +41,8 @@ export default function HamburgerMenu({ isOpen, onClose }: HamburgerMenuProps) {
               {userName && (
                 <p className="font-medium text-foreground truncate">{userName}</p>
               )}
-              {userPhone && (
-                <p className="text-sm text-muted-foreground">+91 {userPhone}</p>
+              {userEmail && (
+                <p className="text-sm text-muted-foreground">{userEmail}</p>
               )}
             </div>
             <button

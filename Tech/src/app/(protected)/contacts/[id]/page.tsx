@@ -92,8 +92,8 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
           </div>
           <div className="space-y-0 text-sm">
             <div className="flex justify-between py-2 border-t border-border">
-              <span className="text-muted-foreground">Phone</span>
-              <span className="text-foreground">+91 {contact.phone}</span>
+              <span className="text-muted-foreground">Email</span>
+              <span className="text-foreground">{contact.email}</span>
             </div>
             <div className="flex justify-between py-2 border-t border-border">
               <span className="text-muted-foreground">Added on</span>
