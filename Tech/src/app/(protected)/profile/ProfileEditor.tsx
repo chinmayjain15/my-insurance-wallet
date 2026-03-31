@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useActionState } from 'react'
 import { User, Mail, Edit3, Loader2 } from 'lucide-react'
 import { updateUserName } from '@/lib/actions/profile'
