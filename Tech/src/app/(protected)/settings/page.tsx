@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Moon, Sun, LogOut, ArrowLeft, Shield, Trash2, Loader2, Edit3 } from 'lucide-react'
@@ -8,6 +8,7 @@ import { useActionState } from 'react'
 import { signOut, deleteAccount } from '@/lib/actions/auth'
 import { useTheme } from '@/components/ThemeProvider'
 import { useAppData } from '@/components/AppDataProvider'
+import { track } from '@/lib/analytics'
 
 export default function SettingsPage() {
   const { theme, toggleTheme } = useTheme()
@@ -17,6 +18,9 @@ export default function SettingsPage() {
   const [deleteOtp, setDeleteOtp] = useState('')
   const [deleteState, deleteAction, isDeleting] = useActionState(deleteAccount, { error: '' })
 
+  useEffect(() => { track('view-settings') }, [])
+  useEffect(() => { if (deleteState.error) track('error-viewed', { screen: 'settings', label: 'delete-account-failed' }) }, [deleteState.error])
+
   return (
     <div className="min-h-screen pb-4">
       {/* Header */}
@@ -24,7 +28,7 @@ export default function SettingsPage() {
         <div className="max-w-lg mx-auto px-6 py-4">
           <div className="flex items-center justify-between mb-1">
             <button
-              onClick={() => router.back()}
+              onClick={() => { track('back-clicked', { screen: 'settings', label: 'back' }); router.back() }}
               className="p-2 -ml-2 text-muted-foreground hover:text-foreground transition-colors rounded-lg hover:bg-accent"
               aria-label="Go back"
             >
@@ -57,7 +61,7 @@ export default function SettingsPage() {
                   </div>
                 </div>
                 {!userName && (
-                  <Link href="/profile" className="p-2 rounded-lg hover:bg-accent transition-colors">
+                  <Link href="/profile" onClick={() => track('option-clicked', { screen: 'settings', label: 'edit-profile' })} className="p-2 rounded-lg hover:bg-accent transition-colors">
                     <Edit3 className="w-4 h-4 text-muted-foreground" />
                   </Link>
                 )}
@@ -71,7 +75,7 @@ export default function SettingsPage() {
           <h3 className="mb-3">Appearance</h3>
           <div className="bg-card border border-border rounded-xl">
             <button
-              onClick={toggleTheme}
+              onClick={() => { track('option-clicked', { screen: 'settings', label: 'toggle-theme', theme: theme === 'dark' ? 'light' : 'dark' }); toggleTheme() }}
               className="w-full p-4 flex items-center justify-between hover:bg-accent transition-colors rounded-xl"
             >
               <div className="flex items-center gap-3">
@@ -114,6 +118,7 @@ export default function SettingsPage() {
           <form action={signOut}>
             <button
               type="submit"
+              onClick={() => track('action-completed', { screen: 'settings', label: 'log-out' })}
               className="w-full bg-muted text-foreground rounded-lg px-6 py-3 font-medium hover:bg-accent transition-colors flex items-center justify-center gap-2"
             >
               <LogOut className="w-4 h-4" />
@@ -122,7 +127,7 @@ export default function SettingsPage() {
           </form>
 
           <button
-            onClick={() => setShowDeleteConfirm(true)}
+            onClick={() => { track('button-clicked', { screen: 'settings', label: 'delete-account-tapped' }); setShowDeleteConfirm(true) }}
             className="w-full bg-destructive text-destructive-foreground rounded-lg px-6 py-3 font-medium hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
           >
             <Trash2 className="w-4 h-4" />
@@ -165,7 +170,7 @@ export default function SettingsPage() {
               <p className="text-sm text-muted-foreground pt-2">This action cannot be undone.</p>
             </div>
 
-            <form action={deleteAction}>
+            <form action={deleteAction} onSubmit={() => track('action-completed', { screen: 'settings', label: 'account-deleted' })}>
               <div className="mb-4">
                 <label className="block mb-2 text-sm text-muted-foreground">
                   Enter any 6-digit code to confirm
@@ -203,7 +208,7 @@ export default function SettingsPage() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => { setShowDeleteConfirm(false); setDeleteOtp('') }}
+                  onClick={() => { track('button-clicked', { screen: 'settings', label: 'delete-account-cancelled' }); setShowDeleteConfirm(false); setDeleteOtp('') }}
                   className="w-full bg-muted text-foreground rounded-lg px-6 py-3 font-medium hover:bg-accent transition-colors"
                 >
                   Cancel

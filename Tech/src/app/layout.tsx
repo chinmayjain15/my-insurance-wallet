@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import { ThemeProvider } from '@/components/ThemeProvider'
+import { AmplitudeProvider } from '@/components/AmplitudeProvider'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -33,7 +34,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body className="bg-background text-foreground antialiased font-sans">
-        <ThemeProvider>{children}</ThemeProvider>
+        <AmplitudeProvider>
+          <ThemeProvider>{children}</ThemeProvider>
+        </AmplitudeProvider>
       </body>
     </html>
   )

@@ -49,7 +49,7 @@ In India, insurance policies are typically stored across multiple disconnected p
 - No monetisation features of any kind
 - No marketplace or insurer integrations
 - No support for document types beyond insurance policies
-- No data retention policy (deferred)
+- No data retention policy (deferred)Here's a bio screenshot. 
 
 ---
 

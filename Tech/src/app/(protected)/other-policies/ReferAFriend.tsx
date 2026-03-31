@@ -1,9 +1,11 @@
 'use client'
 
 import { Share2 } from 'lucide-react'
+import { track } from '@/lib/analytics'
 
 export default function ReferAFriend({ referrer }: { referrer: string }) {
   function handleShare() {
+    track('option-clicked', { screen: 'shared-with-me', label: 'refer-loved-ones' })
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? window.location.origin
     const utmReferrer = encodeURIComponent(referrer.replace(/\s+/g, '_'))
     const appLink = `${baseUrl}?utm_source=referral&utm_medium=whatsapp&utm_referrer=${utmReferrer}`

@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useActionState } from 'react'
 import { User, Mail, Edit3, Loader2 } from 'lucide-react'
 import { updateUserName } from '@/lib/actions/profile'
+import { track } from '@/lib/analytics'
 
 export default function ProfileEditor({
   initialName,
@@ -22,6 +23,8 @@ export default function ProfileEditor({
     if (newName) setDisplayName(newName)
   }
 
+  useEffect(() => { if (state.error) track('error-viewed', { screen: 'my-profile', label: 'name-update-failed' }) }, [state.error])
+
   if (state.success && isEditing) setIsEditing(false)
 
   return (
@@ -38,7 +41,7 @@ export default function ProfileEditor({
         {isEditing ? (
           <form
             action={formAction}
-            onSubmit={handleSuccess}
+            onSubmit={(e) => { track('continue-clicked', { screen: 'my-profile', label: 'save-name' }); handleSuccess(e) }}
             className="space-y-4"
           >
             <div>
@@ -65,7 +68,7 @@ export default function ProfileEditor({
               </button>
               <button
                 type="button"
-                onClick={() => setIsEditing(false)}
+                onClick={() => { track('button-clicked', { screen: 'my-profile', label: 'cancel-edit-name' }); setIsEditing(false) }}
                 className="flex-1 bg-muted text-foreground rounded-xl py-3 font-medium hover:bg-accent transition-colors"
               >
                 Cancel
@@ -86,7 +89,7 @@ export default function ProfileEditor({
                 </div>
               </div>
               <button
-                onClick={() => setIsEditing(true)}
+                onClick={() => { track('button-clicked', { screen: 'my-profile', label: 'edit-name' }); setIsEditing(true) }}
                 className="p-2 rounded-lg hover:bg-accent transition-colors"
               >
                 <Edit3 className="w-4 h-4 text-muted-foreground" />

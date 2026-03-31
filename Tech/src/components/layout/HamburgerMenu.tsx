@@ -6,6 +6,7 @@ import { useTheme } from '@/components/ThemeProvider'
 import { useAppData } from '@/components/AppDataProvider'
 import { signOut } from '@/lib/actions/auth'
 import { cn } from '@/lib/utils'
+import { track } from '@/lib/analytics'
 
 interface HamburgerMenuProps {
   isOpen: boolean
@@ -46,7 +47,7 @@ export default function HamburgerMenu({ isOpen, onClose }: HamburgerMenuProps) {
               )}
             </div>
             <button
-              onClick={onClose}
+              onClick={() => { track('button-clicked', { screen: 'hamburger-menu', label: 'close' }); onClose() }}
               className="p-2 -mr-2 text-muted-foreground hover:text-foreground transition-colors rounded-lg hover:bg-accent shrink-0"
             >
               <X className="w-5 h-5" />
@@ -57,20 +58,20 @@ export default function HamburgerMenu({ isOpen, onClose }: HamburgerMenuProps) {
         {/* Menu Items */}
         <div className="p-4 space-y-1">
           {/* My Profile */}
-          <Link href="/profile" onClick={onClose} className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-accent transition-colors">
+          <Link href="/profile" onClick={() => { track('option-clicked', { screen: 'hamburger-menu', label: 'my-profile' }); onClose() }} className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-accent transition-colors">
             <User className="w-5 h-5 text-muted-foreground" />
             <span className="text-foreground">My Profile</span>
           </Link>
 
           {/* My Contacts */}
-          <Link href="/contacts" onClick={onClose} className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-accent transition-colors">
+          <Link href="/contacts" onClick={() => { track('option-clicked', { screen: 'hamburger-menu', label: 'my-contacts' }); onClose() }} className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-accent transition-colors">
             <Users className="w-5 h-5 text-muted-foreground" />
             <span className="text-foreground">My Contacts</span>
           </Link>
 
           {/* Appearance toggle */}
           <button
-            onClick={toggleTheme}
+            onClick={() => { track('option-clicked', { screen: 'hamburger-menu', label: 'toggle-appearance' }); toggleTheme() }}
             className="w-full flex items-center justify-between px-4 py-3 rounded-lg hover:bg-accent transition-colors"
           >
             <div className="flex items-center gap-3">
@@ -94,7 +95,7 @@ export default function HamburgerMenu({ isOpen, onClose }: HamburgerMenuProps) {
           </button>
 
           {/* Settings */}
-          <Link href="/settings" onClick={onClose} className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-accent transition-colors">
+          <Link href="/settings" onClick={() => { track('option-clicked', { screen: 'hamburger-menu', label: 'settings' }); onClose() }} className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-accent transition-colors">
             <Settings className="w-5 h-5 text-muted-foreground" />
             <span className="text-foreground">Settings</span>
           </Link>
@@ -103,7 +104,7 @@ export default function HamburgerMenu({ isOpen, onClose }: HamburgerMenuProps) {
         {/* Bottom: Refer + Legal + Log Out — pinned */}
         <div className="absolute bottom-20 left-0 right-0 p-4">
           <button
-            onClick={handleReferShare}
+            onClick={() => { track('option-clicked', { screen: 'hamburger-menu', label: 'refer-loved-ones' }); handleReferShare() }}
             className="w-full flex items-center gap-3 px-4 py-3 rounded-lg bg-gradient-to-r from-purple-500/10 to-pink-500/10 hover:from-purple-500/20 hover:to-pink-500/20 transition-colors border border-purple-500/20"
           >
             <Share2 className="w-5 h-5 text-purple-400" />
@@ -113,7 +114,7 @@ export default function HamburgerMenu({ isOpen, onClose }: HamburgerMenuProps) {
           <div className="mt-4 flex flex-col gap-2">
             <Link
               href="/terms"
-              onClick={onClose}
+              onClick={() => { track('option-clicked', { screen: 'hamburger-menu', label: 'terms-and-conditions' }); onClose() }}
               className="w-full flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-accent transition-colors"
             >
               <FileText className="w-4 h-4 text-muted-foreground" />
@@ -121,7 +122,7 @@ export default function HamburgerMenu({ isOpen, onClose }: HamburgerMenuProps) {
             </Link>
             <Link
               href="/privacy"
-              onClick={onClose}
+              onClick={() => { track('option-clicked', { screen: 'hamburger-menu', label: 'privacy-policy' }); onClose() }}
               className="w-full flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-accent transition-colors"
             >
               <Shield className="w-4 h-4 text-muted-foreground" />
@@ -130,6 +131,10 @@ export default function HamburgerMenu({ isOpen, onClose }: HamburgerMenuProps) {
             <form action={signOut}>
               <button
                 type="submit"
+                onClick={() => {
+                  track('option-clicked', { screen: 'hamburger-menu', label: 'log-out' })
+                  track('action-completed', { screen: 'hamburger-menu', label: 'log-out' })
+                }}
                 className="w-full flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-accent transition-colors text-left"
               >
                 <LogOut className="w-4 h-4 text-muted-foreground" />

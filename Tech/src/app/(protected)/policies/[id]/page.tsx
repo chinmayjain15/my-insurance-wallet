@@ -1,12 +1,13 @@
 'use client'
 
-import { useState, useTransition, use } from 'react'
+import { useState, useTransition, use, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, Eye, Share2, Edit3, Heart, FileText, Car, Activity } from 'lucide-react'
 import { useAppData } from '@/components/AppDataProvider'
 import { unsharePolicy, deletePolicy, updatePolicyName } from '@/lib/actions/policies'
 import { PolicyType } from '@/types'
 import Link from 'next/link'
+import { track } from '@/lib/analytics'
 
 const TYPE_COLORS: Record<PolicyType, { bg: string; text: string }> = {
   Health:  { bg: 'bg-[var(--health)]',   text: 'text-[var(--health-foreground)]' },
@@ -36,6 +37,12 @@ export default function PolicyDetailPage({ params }: { params: Promise<{ id: str
 
   const policy = policies.find(p => p.id === id)
 
+  useEffect(() => {
+    if (policy) track('view-policy-detail', { 'policy-type': policy.type })
+    else track('error-viewed', { screen: 'policy-detail', label: 'policy-not-found' })
+  }, [])
+  useEffect(() => { if (nameError) track('error-viewed', { screen: 'policy-detail', label: 'policy-rename-failed', 'policy-type': policy?.type ?? null }) }, [nameError])
+
   if (!policy) {
     return (
       <div className="min-h-screen flex items-center justify-center px-6">
@@ -53,6 +60,7 @@ export default function PolicyDetailPage({ params }: { params: Promise<{ id: str
 
   function handleUnshare(contactId: string) {
     if (isDemo || !policy) return
+    track('button-clicked', { screen: 'policy-detail', label: 'unshare-policy', 'policy-type': policy.type })
     startTransition(async () => {
       await unsharePolicy(policy.id, contactId)
       router.refresh()
@@ -61,6 +69,7 @@ export default function PolicyDetailPage({ params }: { params: Promise<{ id: str
 
   function handleDelete() {
     if (isDemo || !policy) { router.push('/policies'); return }
+    track('button-clicked', { screen: 'policy-detail', label: 'delete-policy-confirmed', 'policy-type': policy.type })
     startTransition(async () => {
       await deletePolicy(policy.id)
       router.push('/policies')
@@ -74,7 +83,7 @@ export default function PolicyDetailPage({ params }: { params: Promise<{ id: str
       <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-sm border-b border-border">
         <div className="max-w-lg mx-auto px-6 py-4 flex items-center justify-between">
           <button
-            onClick={() => router.back()}
+            onClick={() => { track('back-clicked', { screen: 'policy-detail', label: 'back', 'policy-type': policy.type }); router.back() }}
             className="p-2 -ml-2 text-muted-foreground hover:text-foreground transition-colors rounded-lg hover:bg-accent"
           >
             <ArrowLeft className="w-5 h-5" />
@@ -104,6 +113,7 @@ export default function PolicyDetailPage({ params }: { params: Promise<{ id: str
                   onClick={() => {
                     if (isDemo) { setIsEditing(false); return }
                     setNameError('')
+                    track('action-completed', { screen: 'policy-detail', label: 'rename-policy', 'policy-type': policy.type })
                     startTransition(async () => {
                       const result = await updatePolicyName(policy.id, editedName)
                       if (result.error) { setNameError(result.error); return }
@@ -116,7 +126,7 @@ export default function PolicyDetailPage({ params }: { params: Promise<{ id: str
                   Save
                 </button>
                 <button
-                  onClick={() => { setIsEditing(false); setEditedName(policy.name); setNameError('') }}
+                  onClick={() => { track('button-clicked', { screen: 'policy-detail', label: 'cancel-rename', 'policy-type': policy.type }); setIsEditing(false); setEditedName(policy.name); setNameError('') }}
                   className="flex-1 bg-muted text-foreground rounded-lg px-4 py-2 text-sm font-medium"
                 >
                   Cancel
@@ -136,7 +146,7 @@ export default function PolicyDetailPage({ params }: { params: Promise<{ id: str
                   <h2 className="text-foreground break-words">{policy.name}</h2>
                 </div>
                 <button
-                  onClick={() => { setEditedName(policy.name); setIsEditing(true) }}
+                  onClick={() => { track('button-clicked', { screen: 'policy-detail', label: 'edit-policy-name', 'policy-type': policy.type }); setEditedName(policy.name); setIsEditing(true) }}
                   className="p-2 rounded-lg hover:bg-accent transition-colors shrink-0"
                 >
                   <Edit3 className="w-4 h-4 text-muted-foreground" />
@@ -198,6 +208,7 @@ export default function PolicyDetailPage({ params }: { params: Promise<{ id: str
           {contacts.length > 0 ? (
             <Link
               href={`/policies/${policy.id}/share`}
+              onClick={() => track('option-clicked', { screen: 'policy-detail', label: 'share-policy', 'policy-type': policy.type })}
               className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl px-6 py-3 font-medium hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
             >
               <Share2 className="w-4 h-4" />
@@ -206,6 +217,7 @@ export default function PolicyDetailPage({ params }: { params: Promise<{ id: str
           ) : (
             <Link
               href="/contacts/add"
+              onClick={() => track('option-clicked', { screen: 'policy-detail', label: 'add-contacts-to-share' })}
               className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl px-6 py-3 font-medium hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
             >
               <Share2 className="w-4 h-4" />
@@ -216,14 +228,14 @@ export default function PolicyDetailPage({ params }: { params: Promise<{ id: str
 
         {/* Actions */}
         <div className="space-y-3">
-          <button onClick={() => router.push(`/policies/${id}/view`)} className="w-full bg-primary text-primary-foreground rounded-xl px-6 py-3 font-medium hover:opacity-90 transition-opacity flex items-center justify-center gap-2">
+          <button onClick={() => { track('continue-clicked', { screen: 'policy-detail', label: 'view-document', 'policy-type': policy.type, source: 'my-policy' }); router.push(`/policies/${id}/view`) }} className="w-full bg-primary text-primary-foreground rounded-xl px-6 py-3 font-medium hover:opacity-90 transition-opacity flex items-center justify-center gap-2">
             <Eye className="w-4 h-4" />
             View Document
           </button>
 
           <div className="text-center pt-1">
             <button
-              onClick={() => setShowDeleteConfirm(true)}
+              onClick={() => { track('button-clicked', { screen: 'policy-detail', label: 'delete-policy-tapped', 'policy-type': policy.type }); setShowDeleteConfirm(true) }}
               className="text-xs text-muted-foreground/60 hover:text-destructive underline underline-offset-2 transition-colors"
             >
               Delete policy
@@ -257,7 +269,7 @@ export default function PolicyDetailPage({ params }: { params: Promise<{ id: str
                 Delete Permanently
               </button>
               <button
-                onClick={() => setShowDeleteConfirm(false)}
+                onClick={() => { track('button-clicked', { screen: 'policy-detail', label: 'delete-policy-cancelled', 'policy-type': policy.type }); setShowDeleteConfirm(false) }}
                 className="w-full bg-muted text-foreground rounded-xl px-6 py-3 font-medium"
               >
                 Cancel

@@ -1,15 +1,18 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, Shield, Lock, Share2, Database } from 'lucide-react'
 import { acceptConsent } from '@/lib/actions/auth'
+import { track } from '@/lib/analytics'
 
 export default function ConsentPage() {
   const router = useRouter()
   const [accepted, setAccepted] = useState(false)
   const [hasScrolled, setHasScrolled] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => { track('view-consent') }, [])
 
   function handleScroll() {
     const el = scrollRef.current
@@ -23,7 +26,7 @@ export default function ConsentPage() {
       {/* Back button */}
       <div className="pt-6 pb-4">
         <button
-          onClick={() => router.push('/auth')}
+          onClick={() => { track('back-clicked', { screen: 'consent', label: 'back' }); router.push('/auth') }}
           className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
         >
           <ArrowLeft className="w-5 h-5" />
@@ -128,7 +131,10 @@ export default function ConsentPage() {
         </label>
 
         {/* Accept button */}
-        <form action={acceptConsent}>
+        <form action={acceptConsent} onSubmit={() => {
+          track('continue-clicked', { screen: 'consent', label: 'accept-and-continue' })
+          track('action-completed', { screen: 'consent', label: 'sign-in' })
+        }}>
           <button
             type="submit"
             disabled={!accepted || !hasScrolled}

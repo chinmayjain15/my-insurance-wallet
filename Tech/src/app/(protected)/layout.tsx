@@ -1,6 +1,7 @@
 import { cookies } from 'next/headers'
 import { STAGING_COOKIE } from '@/lib/constants'
 import { AppDataProvider } from '@/components/AppDataProvider'
+import { AmplitudeIdentify } from '@/components/AmplitudeIdentify'
 import BottomNav from '@/components/layout/BottomNav'
 import { getUserData } from '@/lib/data'
 import { getUserName } from '@/lib/actions/profile'
@@ -41,6 +42,7 @@ export default async function ProtectedLayout({ children }: { children: React.Re
       initialContacts={initialContacts}
       initialSharedPolicies={initialSharedPolicies}
     >
+      <AmplitudeIdentify />
       <div className="flex flex-col min-h-screen">
         <main className="flex-1 overflow-y-auto pb-20">{children}</main>
         <BottomNav />

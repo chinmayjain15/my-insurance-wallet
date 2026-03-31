@@ -1,12 +1,13 @@
 'use client'
 
-import { useTransition, use } from 'react'
+import { useTransition, use, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, Eye, Share2, Download, Heart, FileText, Car, Activity } from 'lucide-react'
 import Link from 'next/link'
 import { useAppData } from '@/components/AppDataProvider'
 import { getSharedPolicySignedUrl } from '@/lib/actions/policies'
 import { PolicyType } from '@/types'
+import { track } from '@/lib/analytics'
 
 const TYPE_COLORS: Record<PolicyType, { bg: string; text: string }> = {
   Health:  { bg: 'bg-[var(--health)]',   text: 'text-[var(--health-foreground)]' },
@@ -32,6 +33,11 @@ export default function SharedPolicyDetailPage({ params }: { params: Promise<{ i
 
   const policy = sharedPolicies.find(p => p.id === id)
 
+  useEffect(() => {
+    if (policy) track('view-shared-policy-detail', { 'policy-type': policy.type })
+    else track('error-viewed', { screen: 'shared-policy-detail', label: 'policy-not-found' })
+  }, [])
+
   if (!policy) {
     return (
       <div className="min-h-screen flex items-center justify-center px-6">
@@ -50,6 +56,7 @@ export default function SharedPolicyDetailPage({ params }: { params: Promise<{ i
 
   function handleDownload() {
     if (isDemo || !policy) return
+    track('button-clicked', { screen: 'shared-policy-detail', label: 'download-policy', 'policy-type': policy.type })
     startTransition(async () => {
       const { url, error } = await getSharedPolicySignedUrl(policy.id)
       if (error || !url) return
@@ -66,7 +73,7 @@ export default function SharedPolicyDetailPage({ params }: { params: Promise<{ i
       <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-sm border-b border-border">
         <div className="max-w-lg mx-auto px-6 py-4 flex items-center justify-between">
           <button
-            onClick={() => router.back()}
+            onClick={() => { track('back-clicked', { screen: 'shared-policy-detail', label: 'back', 'policy-type': policy.type }); router.back() }}
             className="p-2 -ml-2 text-muted-foreground hover:text-foreground transition-colors rounded-lg hover:bg-accent"
           >
             <ArrowLeft className="w-5 h-5" />
@@ -128,7 +135,7 @@ export default function SharedPolicyDetailPage({ params }: { params: Promise<{ i
         {/* Actions */}
         <div className="space-y-3">
           <button
-            onClick={() => router.push(`/other-policies/${id}/view`)}
+            onClick={() => { track('continue-clicked', { screen: 'shared-policy-detail', label: 'view-document', 'policy-type': policy.type, source: 'shared-with-me' }); router.push(`/other-policies/${id}/view`) }}
             className="w-full bg-primary text-primary-foreground rounded-xl px-6 py-3 font-medium hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
           >
             <Eye className="w-4 h-4" />

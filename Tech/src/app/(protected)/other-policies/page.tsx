@@ -1,10 +1,10 @@
 import { cookies } from 'next/headers'
-import { ArrowLeft } from 'lucide-react'
-import Link from 'next/link'
 import { STAGING_COOKIE } from '@/lib/constants'
 import SharedPoliciesList from './SharedPoliciesList'
 import SharedPoliciesSubtitle from './SharedPoliciesSubtitle'
 import ReferAFriend from './ReferAFriend'
+import { SharedWithMeViewTracker } from '@/components/SharedWithMeViewTracker'
+import BackButton from '@/components/ui/BackButton'
 
 export default async function OtherPoliciesPage() {
   const cookieStore = await cookies()
@@ -17,13 +17,7 @@ export default async function OtherPoliciesPage() {
       {/* Header */}
       <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-sm border-b border-border">
         <div className="max-w-lg mx-auto px-6 py-4 flex items-center justify-between">
-          <Link
-            href="/home"
-            className="p-2 -ml-2 text-muted-foreground hover:text-foreground transition-colors rounded-lg hover:bg-accent"
-            aria-label="Go back"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </Link>
+          <BackButton screen="shared-with-me" />
           <div className="text-center">
             <h1 className="text-lg text-foreground">Shared with Me</h1>
             <SharedPoliciesSubtitle />
@@ -32,6 +26,7 @@ export default async function OtherPoliciesPage() {
         </div>
       </div>
 
+      <SharedWithMeViewTracker />
       <SharedPoliciesList />
 
       {/* Refer a Friend — fixed above nav */}

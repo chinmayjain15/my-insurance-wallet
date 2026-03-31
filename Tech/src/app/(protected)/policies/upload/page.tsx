@@ -1,11 +1,12 @@
 'use client'
 
-import { useActionState, useRef, useState } from 'react'
+import { useActionState, useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, Upload, FileText, CheckCircle2, Loader2, ShieldOff } from 'lucide-react'
 import { uploadPolicy } from '@/lib/actions/policies'
 import { useAppData } from '@/components/AppDataProvider'
 import { PolicyType } from '@/types'
+import { track } from '@/lib/analytics'
 
 const POLICY_TYPES: PolicyType[] = ['Health', 'Life', 'Term', 'Vehicle', 'Other']
 
@@ -26,12 +27,21 @@ export default function UploadPolicyPage() {
   const [selectedType, setSelectedType] = useState<PolicyType | null>(null)
   const [state, formAction, isPending] = useActionState(uploadPolicy, { error: '' })
 
+  useEffect(() => {
+    track('view-upload-policy')
+    if (policies.length >= LIMIT) track('error-viewed', { screen: 'upload-policy', label: 'policy-limit-reached' })
+  }, [])
+  useEffect(() => { if (state.error) track('error-viewed', { screen: 'upload-policy', label: 'upload-failed' }) }, [state.error])
+
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0] ?? null
     setSelectedFile(file)
-    if (file && !policyName) {
-      const nameWithoutExt = file.name.replace(/\.[^/.]+$/, '')
-      setPolicyName(nameWithoutExt)
+    if (file) {
+      track('field-entered', { screen: 'upload-policy', label: 'file-selected', 'file-type': file.type })
+      if (!policyName) {
+        const nameWithoutExt = file.name.replace(/\.[^/.]+$/, '')
+        setPolicyName(nameWithoutExt)
+      }
     }
   }
 
@@ -40,7 +50,7 @@ export default function UploadPolicyPage() {
       <div className="min-h-screen flex flex-col px-6">
         <div className="pt-6 pb-4">
           <button
-            onClick={() => router.back()}
+            onClick={() => { track('back-clicked', { screen: 'upload-policy', label: 'back', 'policy-type': 'not-selected' }); router.back() }}
             className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
           >
             <ArrowLeft className="w-5 h-5" />
@@ -56,7 +66,7 @@ export default function UploadPolicyPage() {
             You can store up to {LIMIT} policies. Delete an existing policy to upload a new one.
           </p>
           <button
-            onClick={() => router.push('/policies')}
+            onClick={() => { track('option-clicked', { screen: 'upload-policy', label: 'manage-policies' }); router.push('/policies') }}
             className="mt-2 bg-primary text-primary-foreground rounded-xl px-6 py-3 font-medium hover:opacity-90 transition-opacity"
           >
             Manage Policies
@@ -71,7 +81,7 @@ export default function UploadPolicyPage() {
       {/* Back button */}
       <div className="pt-6 pb-4">
         <button
-          onClick={() => router.back()}
+          onClick={() => { track('back-clicked', { screen: 'upload-policy', label: 'back', 'policy-type': selectedType ?? 'not-selected' }); router.back() }}
           className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
         >
           <ArrowLeft className="w-5 h-5" />
@@ -79,7 +89,17 @@ export default function UploadPolicyPage() {
         </button>
       </div>
 
-      <form action={formAction} className="flex-1">
+      <form
+        action={formAction}
+        className="flex-1"
+        onSubmit={() => track('continue-clicked', {
+          screen: 'upload-policy',
+          label: 'upload-policy',
+          'policy-type': selectedType ?? 'unknown',
+          'file-type': selectedFile?.type ?? 'unknown',
+          'file-size-kb': selectedFile ? Math.round(selectedFile.size / 1024) : 0,
+        })}
+      >
         <div className="max-w-lg mx-auto w-full py-6 space-y-6">
 
           <div>
@@ -104,7 +124,7 @@ export default function UploadPolicyPage() {
 
             <button
               type="button"
-              onClick={() => fileInputRef.current?.click()}
+              onClick={() => { track('option-clicked', { screen: 'upload-policy', label: 'choose-file' }); fileInputRef.current?.click() }}
               className="w-full border-2 border-dashed border-border rounded-xl p-8 flex flex-col items-center gap-3 hover:border-primary hover:bg-accent/50 transition-colors"
             >
               {selectedFile ? (
@@ -141,6 +161,7 @@ export default function UploadPolicyPage() {
               type="text"
               value={policyName}
               onChange={e => setPolicyName(e.target.value)}
+              onBlur={e => { if (e.target.value) track('field-entered', { screen: 'upload-policy', label: 'policy-name' }) }}
               placeholder="e.g. HDFC Health Insurance"
               className="w-full bg-card border border-border rounded-xl px-4 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
             />
@@ -156,7 +177,7 @@ export default function UploadPolicyPage() {
                   <button
                     key={type}
                     type="button"
-                    onClick={() => setSelectedType(type)}
+                    onClick={() => { track('option-clicked', { screen: 'upload-policy', label: type.toLowerCase() }); setSelectedType(type) }}
                     className={`flex items-center gap-2.5 rounded-xl px-4 py-3 border transition-all ${
                       isActive
                         ? 'border-primary bg-primary/10 text-primary'

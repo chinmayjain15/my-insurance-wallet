@@ -6,12 +6,14 @@ import { useRouter } from 'next/navigation'
 import { Users, FileText, X, Share2 } from 'lucide-react'
 import EmptyState from '@/components/ui/EmptyState'
 import { useAppData } from '@/components/AppDataProvider'
+import { track } from '@/lib/analytics'
 
 export default function ContactsList() {
   const { contacts, policies } = useAppData()
   const router = useRouter()
 
   function handleReferShare() {
+    track('option-clicked', { screen: 'my-contacts', label: 'invite-loved-ones' })
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? window.location.origin
     const appLink = `${baseUrl}?utm_source=referral&utm_medium=whatsapp`
     const message = encodeURIComponent(
@@ -40,7 +42,11 @@ export default function ContactsList() {
           title="No contacts yet"
           description="Add trusted family members or friends to share your insurance policies with them."
           action={
-            <Link href="/contacts/add" className="bg-primary text-primary-foreground rounded-lg px-6 py-2.5 text-sm font-medium hover:opacity-90 transition-opacity inline-block">
+            <Link
+              href="/contacts/add"
+              onClick={() => track('option-clicked', { screen: 'my-contacts', label: 'add-contact' })}
+              className="bg-primary text-primary-foreground rounded-lg px-6 py-2.5 text-sm font-medium hover:opacity-90 transition-opacity inline-block"
+            >
               Add Contact
             </Link>
           }
@@ -60,7 +66,7 @@ export default function ContactsList() {
         <div className="relative">
           <select
             value={filterContactId ?? ''}
-            onChange={(e) => setFilterContactId(e.target.value || null)}
+            onChange={(e) => { if (e.target.value) track('option-clicked', { screen: 'my-contacts', label: 'filter-by-contact' }); setFilterContactId(e.target.value || null) }}
             className="w-full bg-card border border-border rounded-xl px-4 py-2.5 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary appearance-none pr-10 transition-colors"
           >
             <option value="">All contacts</option>
@@ -80,7 +86,7 @@ export default function ContactsList() {
               Policies shared with {selectedContact?.name}
             </p>
             <button
-              onClick={() => setFilterContactId(null)}
+              onClick={() => { track('button-clicked', { screen: 'my-contacts', label: 'clear-contact-filter' }); setFilterContactId(null) }}
               className="text-muted-foreground hover:text-foreground transition-colors"
             >
               <X className="w-4 h-4" />
@@ -91,7 +97,7 @@ export default function ContactsList() {
               {filteredPolicies.map(policy => (
                 <button
                   key={policy.id}
-                  onClick={() => router.push(`/policies/${policy.id}`)}
+                  onClick={() => { track('option-clicked', { screen: 'my-contacts', label: 'view-policy', 'policy-type': policy.type }); router.push(`/policies/${policy.id}`) }}
                   className="w-full bg-background border border-border rounded-lg p-3 hover:bg-accent transition-colors text-left flex items-center gap-3"
                 >
                   <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shrink-0">
@@ -117,7 +123,7 @@ export default function ContactsList() {
         {contacts.map(contact => (
           <button
             key={contact.id}
-            onClick={() => router.push(`/contacts/${contact.id}`)}
+            onClick={() => { track('option-clicked', { screen: 'my-contacts', label: 'view-contact' }); router.push(`/contacts/${contact.id}`) }}
             className="w-full bg-card border border-border rounded-xl p-4 flex items-center gap-3 hover:bg-accent transition-colors text-left"
           >
             <div className="w-10 h-10 rounded-full bg-accent flex items-center justify-center shrink-0">

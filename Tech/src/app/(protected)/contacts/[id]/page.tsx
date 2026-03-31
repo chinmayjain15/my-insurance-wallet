@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition, use } from 'react'
+import { useState, useTransition, use, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, Share2, FileText } from 'lucide-react'
 import Link from 'next/link'
@@ -8,6 +8,7 @@ import { useAppData } from '@/components/AppDataProvider'
 import { deleteContact } from '@/lib/actions/contacts'
 import { sharePolicy, unsharePolicy } from '@/lib/actions/policies'
 import { PolicyType } from '@/types'
+import { track } from '@/lib/analytics'
 
 const TYPE_COLORS: Record<PolicyType, { bg: string; text: string }> = {
   Health:  { bg: 'bg-[var(--health)]',   text: 'text-[var(--health-foreground)]' },
@@ -26,6 +27,11 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
   const [showShareSheet, setShowShareSheet] = useState(false)
 
   const contact = contacts.find(c => c.id === id)
+
+  useEffect(() => {
+    if (contact) track('view-contact-detail')
+    else track('error-viewed', { screen: 'contact-detail', label: 'contact-not-found' })
+  }, [])
 
   if (!contact) {
     return (
@@ -47,6 +53,7 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
     if (isDemo || !contact) return
     const policy = policies.find(p => p.id === policyId)
     if (!policy) return
+    track('option-clicked', { screen: 'contact-detail', label: 'toggle-policy-share', 'policy-type': policy.type })
     startTransition(async () => {
       if (policy.sharedWith.includes(contact.id)) {
         await unsharePolicy(policyId, contact.id)
@@ -59,6 +66,7 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
 
   function handleDelete() {
     if (isDemo || !contact) { router.push('/contacts'); return }
+    track('action-completed', { screen: 'contact-detail', label: 'contact-removed' })
     startTransition(async () => {
       const result = await deleteContact(contact.id)
       if (!result.error) router.push('/contacts')
@@ -71,7 +79,7 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
       <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-sm border-b border-border">
         <div className="max-w-lg mx-auto px-6 py-4">
           <button
-            onClick={() => router.back()}
+            onClick={() => { track('back-clicked', { screen: 'contact-detail', label: 'back' }); router.back() }}
             className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
           >
             <ArrowLeft className="w-5 h-5" />
@@ -114,7 +122,7 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
             <h3 className="text-foreground">Shared Policies</h3>
             {allPolicies.length > 0 && (
               <button
-                onClick={() => setShowShareSheet(true)}
+                onClick={() => { track('button-clicked', { screen: 'contact-detail', label: 'manage-sharing' }); setShowShareSheet(true) }}
                 className="text-sm text-primary hover:underline flex items-center gap-1"
               >
                 <Share2 className="w-3.5 h-3.5" />
@@ -130,7 +138,7 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
                 return (
                   <div key={policy.id} className="relative">
                     <button
-                      onClick={() => router.push(`/policies/${policy.id}`)}
+                      onClick={() => { track('option-clicked', { screen: 'contact-detail', label: 'view-policy', 'policy-type': policy.type }); router.push(`/policies/${policy.id}`) }}
                       className="w-full bg-card border border-border rounded-xl p-4 hover:bg-accent transition-colors text-left"
                     >
                       <div className="flex items-start gap-3 pr-20">
@@ -146,7 +154,7 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
                       </div>
                     </button>
                     <button
-                      onClick={() => handleToggleShare(policy.id)}
+                      onClick={() => { track('button-clicked', { screen: 'contact-detail', label: 'unshare-policy', 'policy-type': policy.type }); handleToggleShare(policy.id) }}
                       disabled={isPending}
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-destructive hover:underline disabled:opacity-50 bg-card px-2 py-1 rounded"
                     >
@@ -164,7 +172,7 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
               </p>
               {allPolicies.length > 0 && (
                 <button
-                  onClick={() => setShowShareSheet(true)}
+                  onClick={() => { track('button-clicked', { screen: 'contact-detail', label: 'manage-sharing' }); setShowShareSheet(true) }}
                   className="text-sm text-primary hover:underline"
                 >
                   Share a policy
@@ -176,7 +184,7 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
 
         {/* Remove Contact */}
         <button
-          onClick={() => setShowDeleteConfirm(true)}
+          onClick={() => { track('button-clicked', { screen: 'contact-detail', label: 'remove-contact-tapped' }); setShowDeleteConfirm(true) }}
           className="w-full bg-destructive text-destructive-foreground rounded-xl px-6 py-3 font-medium hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
         >
           Remove Contact
@@ -256,7 +264,7 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
                 Remove Contact
               </button>
               <button
-                onClick={() => setShowDeleteConfirm(false)}
+                onClick={() => { track('button-clicked', { screen: 'contact-detail', label: 'remove-contact-cancelled' }); setShowDeleteConfirm(false) }}
                 className="w-full bg-muted text-foreground rounded-xl px-6 py-3 font-medium"
               >
                 Cancel

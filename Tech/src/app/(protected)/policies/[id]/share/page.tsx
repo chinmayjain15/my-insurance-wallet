@@ -1,12 +1,13 @@
 'use client'
 
-import { useState, useTransition, use } from 'react'
+import { useState, useTransition, use, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, Plus, Users, Loader2 } from 'lucide-react'
 import { useAppData } from '@/components/AppDataProvider'
 import { sharePolicy, unsharePolicy } from '@/lib/actions/policies'
 import EmptyState from '@/components/ui/EmptyState'
 import Link from 'next/link'
+import { track } from '@/lib/analytics'
 
 export default function SharePolicyPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
@@ -15,6 +16,11 @@ export default function SharePolicyPage({ params }: { params: Promise<{ id: stri
   const [isPending, startTransition] = useTransition()
 
   const policy = policies.find(p => p.id === id)
+
+  useEffect(() => {
+    if (policy) track('view-share-policy', { 'policy-type': policy.type })
+    else track('error-viewed', { screen: 'share-policy', label: 'policy-not-found' })
+  }, [])
 
   const [selected, setSelected] = useState<Set<string>>(
     () => new Set(policy?.sharedWith ?? [])
@@ -43,6 +49,17 @@ export default function SharePolicyPage({ params }: { params: Promise<{ id: stri
 
   function handleConfirm() {
     if (isDemo || !policy) { router.back(); return }
+    const newlyAdded = [...selected].filter(id => !originallyShared.has(id))
+    if (newlyAdded.length > 0) {
+      track('continue-clicked', {
+        screen: 'share-policy',
+        label: 'confirm-share',
+        'policy-type': policy.type,
+        'contacts-added': newlyAdded.length,
+      })
+    } else {
+      track('continue-clicked', { screen: 'share-policy', label: 'confirm-unshare', 'policy-type': policy.type })
+    }
     startTransition(async () => {
       for (const id of selected) {
         if (!originallyShared.has(id)) await sharePolicy(policy.id, id)
@@ -50,6 +67,7 @@ export default function SharePolicyPage({ params }: { params: Promise<{ id: stri
       for (const id of originallyShared) {
         if (!selected.has(id)) await unsharePolicy(policy.id, id)
       }
+      track('action-completed', { screen: 'share-policy', label: 'sharing-completed', 'policy-type': policy.type })
       router.push(`/policies/${policy.id}`)
       router.refresh()
     })
@@ -85,14 +103,14 @@ export default function SharePolicyPage({ params }: { params: Promise<{ id: stri
         <div className="max-w-lg mx-auto px-6 py-4">
           <div className="flex items-center justify-between mb-3">
             <button
-              onClick={() => router.back()}
+              onClick={() => { track('back-clicked', { screen: 'share-policy', label: 'back', 'policy-type': policy.type }); router.back() }}
               className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
             >
               <ArrowLeft className="w-5 h-5" />
               <span className="text-sm">Back</span>
             </button>
             <button
-              onClick={() => router.back()}
+              onClick={() => { track('back-clicked', { screen: 'share-policy', label: 'cancel', 'policy-type': policy.type }); router.back() }}
               className="text-primary hover:underline text-sm font-medium"
             >
               Cancel
@@ -114,6 +132,7 @@ export default function SharePolicyPage({ params }: { params: Promise<{ id: stri
             action={
               <Link
                 href="/contacts/add"
+                onClick={() => track('option-clicked', { screen: 'share-policy', label: 'add-contact', 'policy-type': policy.type })}
                 className="bg-primary text-primary-foreground rounded-lg px-6 py-2.5 font-medium hover:opacity-90 transition-opacity inline-block"
               >
                 Add Contact
@@ -128,7 +147,7 @@ export default function SharePolicyPage({ params }: { params: Promise<{ id: stri
               return (
                 <button
                   key={contact.id}
-                  onClick={() => toggleContact(contact.id)}
+                  onClick={() => { track('option-clicked', { screen: 'share-policy', label: contact.name, 'policy-type': policy.type }); toggleContact(contact.id) }}
                   className={`w-full bg-card border rounded-xl p-4 hover:bg-accent transition-colors text-left ${
                     isSelected ? 'border-primary' : 'border-border'
                   }`}
@@ -163,6 +182,7 @@ export default function SharePolicyPage({ params }: { params: Promise<{ id: stri
             {/* Add another contact */}
             <Link
               href={`/contacts/add?returnTo=/policies/${id}/share`}
+              onClick={() => track('option-clicked', { screen: 'share-policy', label: 'add-another-contact', 'policy-type': policy.type })}
               className="w-full bg-muted/50 border-2 border-dashed border-border rounded-xl p-4 hover:bg-accent transition-colors flex items-center justify-center gap-2 text-muted-foreground hover:text-foreground"
             >
               <Plus className="w-5 h-5" />

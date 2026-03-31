@@ -1,11 +1,12 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Menu, Heart, Activity, Car, FileText, Plus } from 'lucide-react'
 import HamburgerMenu from '@/components/layout/HamburgerMenu'
 import { useAppData } from '@/components/AppDataProvider'
 import { PolicyType } from '@/types'
+import { track } from '@/lib/analytics'
 
 const policyTypes: { type: PolicyType; icon: React.ElementType; cssVar: string }[] = [
   { type: 'Health', icon: Activity, cssVar: '--health' },
@@ -27,6 +28,8 @@ export default function HomePage() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const { policies } = useAppData()
 
+  useEffect(() => { track('view-home') }, [])
+
   const getCount = (type: PolicyType) => policies.filter(p => p.type === type).length
   const getSharedCount = (type: PolicyType) => {
     const contactIds = new Set<string>()
@@ -47,7 +50,7 @@ export default function HomePage() {
         <div className="max-w-lg mx-auto px-6 py-4 flex items-center justify-between">
           <button
             className="p-2 -ml-2 text-muted-foreground hover:text-foreground transition-colors rounded-lg hover:bg-accent"
-            onClick={() => setIsMenuOpen(true)}
+            onClick={() => { track('view-hamburger-menu'); setIsMenuOpen(true) }}
           >
             <Menu className="w-5 h-5" />
           </button>
@@ -76,6 +79,7 @@ export default function HomePage() {
               <Link
                 key={item.type}
                 href={`/policies?type=${item.type.toLowerCase()}`}
+                onClick={() => track('option-clicked', { screen: 'home', label: item.type.toLowerCase() })}
                 className={`group relative bg-card border border-border rounded-xl p-4 hover:shadow-lg transition-all overflow-hidden ${gridClasses[index]}`}
               >
                 <div

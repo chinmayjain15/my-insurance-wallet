@@ -1,9 +1,10 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useActionState, useEffect } from 'react'
 import { signInWithEmail, demoSignIn } from '@/lib/actions/auth'
 import { Shield, ArrowRight } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { track } from '@/lib/analytics'
 
 const IS_STAGING = process.env.NEXT_PUBLIC_APP_ENV === 'staging'
 
@@ -12,7 +13,11 @@ const initialState = { error: '' }
 export default function AuthPage() {
   const [state, formAction, isPending] = useActionState(signInWithEmail, initialState)
 
+  useEffect(() => { track('view-auth') }, [])
+  useEffect(() => { if (state?.error) track('error-viewed', { screen: 'auth', label: 'sign-in-failed' }) }, [state?.error])
+
   function handleGoogleSignIn() {
+    track('continue-clicked', { screen: 'auth', label: 'google-sign-in' })
     const supabase = createClient()
     supabase.auth.signInWithOAuth({
       provider: 'google',
@@ -40,7 +45,7 @@ export default function AuthPage() {
 
           {IS_STAGING ? (
             /* Staging: email bypass */
-            <form action={formAction}>
+            <form action={formAction} onSubmit={() => track('continue-clicked', { screen: 'auth', label: 'email-sign-in' })}>
               <label htmlFor="email" className="block mb-2 text-sm text-muted-foreground">
                 Enter your email to get started
               </label>
@@ -83,7 +88,10 @@ export default function AuthPage() {
           )}
 
           {/* Demo mode */}
-          <form action={demoSignIn} className="text-center">
+          <form action={demoSignIn} className="text-center" onSubmit={() => {
+            track('continue-clicked', { screen: 'auth', label: 'try-demo-mode' })
+            track('action-completed', { screen: 'auth', label: 'sign-in' })
+          }}>
             <button
               type="submit"
               className="text-xs text-muted-foreground/60 hover:text-muted-foreground underline underline-offset-2 transition-colors"

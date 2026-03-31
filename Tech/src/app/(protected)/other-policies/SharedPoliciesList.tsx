@@ -5,6 +5,7 @@ import { FileText, Share2 } from 'lucide-react'
 import EmptyState from '@/components/ui/EmptyState'
 import { useAppData } from '@/components/AppDataProvider'
 import { PolicyType } from '@/types'
+import { track } from '@/lib/analytics'
 
 const TYPE_COLORS: Record<PolicyType, { bg: string; text: string }> = {
   Health:  { bg: 'bg-[var(--health)]',   text: 'text-[var(--health-foreground)]' },
@@ -37,7 +38,7 @@ export default function SharedPoliciesList() {
         return (
           <button
             key={policy.id}
-            onClick={() => router.push(`/other-policies/${policy.id}`)}
+            onClick={() => { track('option-clicked', { screen: 'shared-with-me', label: 'view-shared-policy', 'policy-type': policy.type }); router.push(`/other-policies/${policy.id}`) }}
             className="w-full bg-card border border-border rounded-xl p-4 hover:bg-accent transition-colors text-left"
           >
             <div className="flex items-start gap-3">

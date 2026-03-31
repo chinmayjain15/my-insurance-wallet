@@ -1,17 +1,19 @@
 import { Shield } from 'lucide-react'
 import BackButton from '@/components/ui/BackButton'
+import { PageViewTracker } from '@/components/PageViewTracker'
 
 export default function PrivacyPolicyPage() {
   return (
     <div className="min-h-screen bg-background pb-8">
       <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-sm border-b border-border">
         <div className="max-w-lg mx-auto px-6 py-4 flex items-center justify-between">
-          <BackButton />
+          <BackButton screen="privacy-policy" />
           <h1 className="text-foreground">Privacy Policy</h1>
           <div className="w-9" />
         </div>
       </div>
 
+      <PageViewTracker event="view-privacy-policy" />
       <div className="max-w-lg mx-auto px-6 py-6">
         <div className="flex items-center justify-center mb-6">
           <div className="bg-primary/10 rounded-full p-4">

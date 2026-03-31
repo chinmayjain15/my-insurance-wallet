@@ -81,7 +81,7 @@ export async function uploadPolicy(
   }
 
   revalidatePath('/', 'layout')
-  redirect('/policies')
+  redirect('/policies?uploaded=1')
 }
 
 async function getOwnerUserId(email: string): Promise<string | null> {

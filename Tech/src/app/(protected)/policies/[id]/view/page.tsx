@@ -16,5 +16,5 @@ export default async function ViewPolicyPage({ params }: { params: Promise<{ id:
 
   const { url, error } = await getSignedUrl(id)
 
-  return <PolicyViewer policyId={id} signedUrl={url} error={error} />
+  return <PolicyViewer policyId={id} signedUrl={url} error={error} source="my-policy" />
 }

@@ -16,5 +16,5 @@ export default async function ViewSharedPolicyPage({ params }: { params: Promise
 
   const { url, error } = await getSharedPolicySignedUrl(id)
 
-  return <PolicyViewer policyId={id} signedUrl={url} error={error} />
+  return <PolicyViewer policyId={id} signedUrl={url} error={error} source="shared-with-me" />
 }
