@@ -33,7 +33,17 @@ export async function GET(request: NextRequest) {
 
   const email = session.user.email.toLowerCase()
 
-  cookieStore.set(STAGING_COOKIE, JSON.stringify({ email, consentGiven: false, createdAt: Date.now() }), {
+  const { createServiceClient } = await import('@/lib/supabase/service')
+  const serviceClient = createServiceClient()
+  const { data: existingUser } = await serviceClient
+    .from('users')
+    .select('consent_given')
+    .eq('email', email)
+    .single()
+
+  const consentGiven = existingUser?.consent_given === true
+
+  cookieStore.set(STAGING_COOKIE, JSON.stringify({ email, consentGiven, createdAt: Date.now() }), {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
@@ -41,5 +51,5 @@ export async function GET(request: NextRequest) {
     path: '/',
   })
 
-  return NextResponse.redirect(`${origin}/consent`)
+  return NextResponse.redirect(`${origin}${consentGiven ? '/home' : '/consent'}`)
 }

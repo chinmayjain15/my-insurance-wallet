@@ -31,13 +31,22 @@ export async function signInWithEmail(
     return { error: 'Please enter a valid email address' }
   }
 
+  const supabase = createServiceClient()
+  const { data: existingUser } = await supabase
+    .from('users')
+    .select('consent_given')
+    .eq('email', email)
+    .single()
+
+  const consentGiven = existingUser?.consent_given === true
+
   const cookieStore = await cookies()
   cookieStore.set(
     STAGING_COOKIE,
-    JSON.stringify({ email, consentGiven: false, createdAt: Date.now() }),
+    JSON.stringify({ email, consentGiven, createdAt: Date.now() }),
     COOKIE_OPTIONS
   )
-  redirect('/consent')
+  redirect(consentGiven ? '/home' : '/consent')
 }
 
 export async function acceptConsent(): Promise<void> {
