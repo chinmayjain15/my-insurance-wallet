@@ -7,8 +7,8 @@ export function initAmplitude(apiKey: string) {
   amplitude.init(apiKey, {
     autocapture: {
       elementInteractions: false, // we track manually
-      pageViews: true,
-      sessions: true,
+      pageViews: false,
+      sessions: false,
     },
     defaultTracking: false,
   })
