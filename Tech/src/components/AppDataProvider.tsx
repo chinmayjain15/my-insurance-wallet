@@ -9,6 +9,7 @@ interface AppDataContextType {
   contacts: Contact[]
   sharedPolicies: SharedPolicy[]
   isDemo: boolean
+  userId: string | null
   userEmail: string
   userName: string | null
 }
@@ -18,6 +19,7 @@ const AppDataContext = createContext<AppDataContextType>({
   contacts: [],
   sharedPolicies: [],
   isDemo: false,
+  userId: null,
   userEmail: '',
   userName: null,
 })
@@ -25,6 +27,7 @@ const AppDataContext = createContext<AppDataContextType>({
 export function AppDataProvider({
   children,
   isDemo,
+  userId = null,
   userEmail = '',
   userName = null,
   initialPolicies = [],
@@ -33,6 +36,7 @@ export function AppDataProvider({
 }: {
   children: React.ReactNode
   isDemo: boolean
+  userId?: string | null
   userEmail?: string
   userName?: string | null
   initialPolicies?: Policy[]
@@ -44,7 +48,7 @@ export function AppDataProvider({
   const sharedPolicies = isDemo ? DEMO_SHARED_POLICIES : initialSharedPolicies
 
   return (
-    <AppDataContext.Provider value={{ policies, contacts, sharedPolicies, isDemo, userEmail, userName }}>
+    <AppDataContext.Provider value={{ policies, contacts, sharedPolicies, isDemo, userId, userEmail, userName }}>
       {children}
     </AppDataContext.Provider>
   )

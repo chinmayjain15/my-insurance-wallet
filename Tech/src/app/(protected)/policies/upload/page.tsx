@@ -22,12 +22,15 @@ export default function UploadPolicyPage() {
   const router = useRouter()
   const { policies } = useAppData()
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const viewTracked = useRef(false)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [policyName, setPolicyName] = useState('')
   const [selectedType, setSelectedType] = useState<PolicyType | null>(null)
   const [state, formAction, isPending] = useActionState(uploadPolicy, { error: '' })
 
   useEffect(() => {
+    if (viewTracked.current) return
+    viewTracked.current = true
     track('view-upload-policy')
     if (policies.length >= LIMIT) track('error-viewed', { screen: 'upload-policy', label: 'policy-limit-reached' })
   }, [])

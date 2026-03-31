@@ -1,9 +1,14 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { track } from '@/lib/analytics'
 
 export function PageViewTracker({ event }: { event: `view-${string}` }) {
-  useEffect(() => { track(event) }, [event])
+  const tracked = useRef(false)
+  useEffect(() => {
+    if (tracked.current) return
+    tracked.current = true
+    track(event)
+  }, [event])
   return null
 }

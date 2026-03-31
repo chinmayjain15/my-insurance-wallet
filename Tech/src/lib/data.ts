@@ -2,6 +2,7 @@ import { createServiceClient } from '@/lib/supabase/service'
 import { Policy, Contact, SharedPolicy } from '@/types'
 
 export async function getUserData(email: string): Promise<{
+  userId: string | null
   policies: Policy[]
   contacts: Contact[]
   sharedPolicies: SharedPolicy[]
@@ -110,5 +111,5 @@ export async function getUserData(email: string): Promise<{
     }
   }
 
-  return { policies, contacts, sharedPolicies }
+  return { userId: user?.id ?? null, policies, contacts, sharedPolicies }
 }

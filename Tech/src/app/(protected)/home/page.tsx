@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { Menu, Heart, Activity, Car, FileText, Plus } from 'lucide-react'
 import HamburgerMenu from '@/components/layout/HamburgerMenu'
@@ -27,8 +27,13 @@ const gridClasses = [
 export default function HomePage() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const { policies } = useAppData()
+  const viewTracked = useRef(false)
 
-  useEffect(() => { track('view-home') }, [])
+  useEffect(() => {
+    if (viewTracked.current) return
+    viewTracked.current = true
+    track('view-home', { 'number-of-policies': policies.length })
+  }, [])
 
   const getCount = (type: PolicyType) => policies.filter(p => p.type === type).length
   const getSharedCount = (type: PolicyType) => {
@@ -79,7 +84,7 @@ export default function HomePage() {
               <Link
                 key={item.type}
                 href={`/policies?type=${item.type.toLowerCase()}`}
-                onClick={() => track('option-clicked', { screen: 'home', label: item.type.toLowerCase() })}
+                onClick={() => track('button-clicked', { screen: 'home', label: 'bento-click', 'bento-type': item.type.toLowerCase() })}
                 className={`group relative bg-card border border-border rounded-xl p-4 hover:shadow-lg transition-all overflow-hidden ${gridClasses[index]}`}
               >
                 <div

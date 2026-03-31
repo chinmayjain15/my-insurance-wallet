@@ -9,7 +9,7 @@ import { track } from '@/lib/analytics'
 const navItems = [
   { href: '/policies', label: 'My Policies', trackLabel: 'my-policies', icon: FileText, special: false },
   { href: '/home', label: 'Home', trackLabel: 'home', icon: Home, special: true },
-  { href: '/other-policies', label: 'Shared with Me', trackLabel: 'shared-with-me', icon: Share2, special: false },
+  { href: '/other-policies', label: 'Shared with Me', trackLabel: 'share-with-me', icon: Share2, special: false },
 ]
 
 function screenFromPath(pathname: string): string {
@@ -33,7 +33,7 @@ export default function BottomNav() {
               <Link
                 key={href}
                 href={href}
-                onClick={() => track('option-clicked', { screen: screenFromPath(pathname), label: trackLabel })}
+                onClick={() => track('option-clicked', { screen: screenFromPath(pathname), label: 'navigation-item-tapped', 'navigation-bar-type': trackLabel })}
                 className={cn(
                   'flex flex-col items-center justify-center min-w-[60px] min-h-[44px] -mt-6 transition-all',
                   isActive ? 'scale-110' : 'scale-100'
@@ -63,7 +63,7 @@ export default function BottomNav() {
             <Link
               key={href}
               href={href}
-              onClick={() => track('option-clicked', { screen: screenFromPath(pathname), label: trackLabel })}
+              onClick={() => track('option-clicked', { screen: screenFromPath(pathname), label: 'navigation-item-tapped', 'navigation-bar-type': trackLabel })}
               className={cn(
                 'flex flex-col items-center justify-center min-w-[60px] min-h-[44px] gap-1 px-3 py-2 rounded-lg transition-colors',
                 isActive ? 'text-primary' : 'text-muted-foreground'

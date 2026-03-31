@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Plus, FileText, Share2, ArrowLeft } from 'lucide-react'
@@ -28,8 +28,11 @@ export default function PoliciesPage() {
   ) ?? 'All'
   const [selected, setSelected] = useState<PolicyType | 'All'>(initialType)
   const router = useRouter()
+  const viewTracked = useRef(false)
 
   useEffect(() => {
+    if (viewTracked.current) return
+    viewTracked.current = true
     track('view-my-policies', { label: policies.length === 0 ? '0-state' : 'non-0-state' })
     if (searchParams.get('uploaded') === '1') {
       track('action-completed', { screen: 'upload-policy', label: 'policy-uploaded' })
@@ -132,7 +135,7 @@ export default function PoliciesPage() {
                             </div>
                           </div>
                         </button>
-                        <button onClick={() => { track('option-clicked', { screen: 'my-policies', label: 'share-policy', 'policy-type': policy.type }); router.push(`/policies/${policy.id}/share`) }} className="absolute right-2 top-1/2 -translate-y-1/2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg p-2 hover:opacity-90 transition-opacity shadow-lg">
+                        <button onClick={() => { track('share-clicked', { screen: 'my-policies', label: 'share', 'policy-type': policy.type }); router.push(`/policies/${policy.id}/share`) }} className="absolute right-2 top-1/2 -translate-y-1/2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg p-2 hover:opacity-90 transition-opacity shadow-lg">
                           <Share2 className="w-4 h-4" />
                         </button>
                       </div>
@@ -172,7 +175,7 @@ export default function PoliciesPage() {
                       </div>
                     </div>
                   </button>
-                  <button onClick={() => { track('option-clicked', { screen: 'my-policies', label: 'share-policy', 'policy-type': policy.type }); router.push(`/policies/${policy.id}/share`) }} className="absolute right-2 top-1/2 -translate-y-1/2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg p-2 hover:opacity-90 transition-opacity shadow-lg">
+                  <button onClick={() => { track('share-clicked', { screen: 'my-policies', label: 'share', 'policy-type': policy.type }); router.push(`/policies/${policy.id}/share`) }} className="absolute right-2 top-1/2 -translate-y-1/2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg p-2 hover:opacity-90 transition-opacity shadow-lg">
                     <Share2 className="w-4 h-4" />
                   </button>
                 </div>

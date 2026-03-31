@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState, useEffect } from 'react'
+import { useActionState, useEffect, useRef } from 'react'
 import { signInWithEmail, demoSignIn } from '@/lib/actions/auth'
 import { Shield, ArrowRight } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
@@ -12,8 +12,13 @@ const initialState = { error: '' }
 
 export default function AuthPage() {
   const [state, formAction, isPending] = useActionState(signInWithEmail, initialState)
+  const viewTracked = useRef(false)
 
-  useEffect(() => { track('view-auth') }, [])
+  useEffect(() => {
+    if (viewTracked.current) return
+    viewTracked.current = true
+    track('view-auth')
+  }, [])
   useEffect(() => { if (state?.error) track('error-viewed', { screen: 'auth', label: 'sign-in-failed' }) }, [state?.error])
 
   function handleGoogleSignIn() {

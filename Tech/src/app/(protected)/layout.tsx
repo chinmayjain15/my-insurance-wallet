@@ -17,6 +17,7 @@ export default async function ProtectedLayout({ children }: { children: React.Re
   let initialContacts: Contact[] = []
   let initialSharedPolicies: SharedPolicy[] = []
   let userName: string | null = null
+  let userId: string | null = null
 
   if (!isDemo && sessionData?.email) {
     try {
@@ -24,6 +25,7 @@ export default async function ProtectedLayout({ children }: { children: React.Re
         getUserData(sessionData.email),
         getUserName(sessionData.email),
       ])
+      userId = data.userId
       initialPolicies = data.policies
       initialContacts = data.contacts
       initialSharedPolicies = data.sharedPolicies
@@ -36,6 +38,7 @@ export default async function ProtectedLayout({ children }: { children: React.Re
   return (
     <AppDataProvider
       isDemo={isDemo}
+      userId={userId}
       userEmail={sessionData?.email ?? ''}
       userName={userName}
       initialPolicies={initialPolicies}

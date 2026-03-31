@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition, use, useEffect } from 'react'
+import { useState, useTransition, use, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, Plus, Users, Loader2 } from 'lucide-react'
 import { useAppData } from '@/components/AppDataProvider'
@@ -16,8 +16,11 @@ export default function SharePolicyPage({ params }: { params: Promise<{ id: stri
   const [isPending, startTransition] = useTransition()
 
   const policy = policies.find(p => p.id === id)
+  const viewTracked = useRef(false)
 
   useEffect(() => {
+    if (viewTracked.current) return
+    viewTracked.current = true
     if (policy) track('view-share-policy', { 'policy-type': policy.type })
     else track('error-viewed', { screen: 'share-policy', label: 'policy-not-found' })
   }, [])

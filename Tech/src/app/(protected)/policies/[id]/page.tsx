@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition, use, useEffect } from 'react'
+import { useState, useTransition, use, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, Eye, Share2, Edit3, Heart, FileText, Car, Activity } from 'lucide-react'
 import { useAppData } from '@/components/AppDataProvider'
@@ -36,8 +36,11 @@ export default function PolicyDetailPage({ params }: { params: Promise<{ id: str
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
   const policy = policies.find(p => p.id === id)
+  const viewTracked = useRef(false)
 
   useEffect(() => {
+    if (viewTracked.current) return
+    viewTracked.current = true
     if (policy) track('view-policy-detail', { 'policy-type': policy.type })
     else track('error-viewed', { screen: 'policy-detail', label: 'policy-not-found' })
   }, [])

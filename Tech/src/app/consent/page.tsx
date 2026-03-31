@@ -11,8 +11,13 @@ export default function ConsentPage() {
   const [accepted, setAccepted] = useState(false)
   const [hasScrolled, setHasScrolled] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
+  const viewTracked = useRef(false)
 
-  useEffect(() => { track('view-consent') }, [])
+  useEffect(() => {
+    if (viewTracked.current) return
+    viewTracked.current = true
+    track('view-consent')
+  }, [])
 
   function handleScroll() {
     const el = scrollRef.current

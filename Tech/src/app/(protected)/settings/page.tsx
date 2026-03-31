@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Moon, Sun, LogOut, ArrowLeft, Shield, Trash2, Loader2, Edit3 } from 'lucide-react'
@@ -17,8 +17,13 @@ export default function SettingsPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleteOtp, setDeleteOtp] = useState('')
   const [deleteState, deleteAction, isDeleting] = useActionState(deleteAccount, { error: '' })
+  const viewTracked = useRef(false)
 
-  useEffect(() => { track('view-settings') }, [])
+  useEffect(() => {
+    if (viewTracked.current) return
+    viewTracked.current = true
+    track('view-settings')
+  }, [])
   useEffect(() => { if (deleteState.error) track('error-viewed', { screen: 'settings', label: 'delete-account-failed' }) }, [deleteState.error])
 
   return (

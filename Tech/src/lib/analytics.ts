@@ -34,5 +34,7 @@ export function track(event: string, props?: Record<string, string | boolean | n
 
 export function reset() {
   if (!initialized) return
+  const deviceId = amplitude.getDeviceId()
   amplitude.reset()
+  if (deviceId) amplitude.setDeviceId(deviceId)
 }

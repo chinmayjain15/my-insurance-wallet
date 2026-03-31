@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState, useEffect } from 'react'
+import { useActionState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, UserPlus, Loader2 } from 'lucide-react'
 import { addContact } from '@/lib/actions/contacts'
@@ -9,8 +9,13 @@ import { track } from '@/lib/analytics'
 export default function AddContactForm({ returnTo }: { returnTo: string }) {
   const router = useRouter()
   const [state, formAction, isPending] = useActionState(addContact, { error: '' })
+  const viewTracked = useRef(false)
 
-  useEffect(() => { track('view-add-contact') }, [])
+  useEffect(() => {
+    if (viewTracked.current) return
+    viewTracked.current = true
+    track('view-add-contact')
+  }, [])
   useEffect(() => { if (state.error) track('error-viewed', { screen: 'add-contact', label: 'add-contact-failed' }) }, [state.error])
 
   return (

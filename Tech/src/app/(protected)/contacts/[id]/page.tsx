@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition, use, useEffect } from 'react'
+import { useState, useTransition, use, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, Share2, FileText } from 'lucide-react'
 import Link from 'next/link'
@@ -27,8 +27,11 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
   const [showShareSheet, setShowShareSheet] = useState(false)
 
   const contact = contacts.find(c => c.id === id)
+  const viewTracked = useRef(false)
 
   useEffect(() => {
+    if (viewTracked.current) return
+    viewTracked.current = true
     if (contact) track('view-contact-detail')
     else track('error-viewed', { screen: 'contact-detail', label: 'contact-not-found' })
   }, [])
