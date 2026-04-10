@@ -12,12 +12,14 @@
   },
   "dependencies": {
     "@amplitude/analytics-browser": "^2.38.0",
+    "@rudderstack/analytics-js": "^3.31.0",
     "@supabase/ssr": "^0.5.2",
     "@supabase/supabase-js": "^2.47.0",
     "clsx": "^2.1.1",
     "lucide-react": "^0.468.0",
     "mixpanel-browser": "^2.77.0",
     "next": "^15.1.0",
+    "posthog-js": "^1.367.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "tailwind-merge": "^2.5.5"
