@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { ArrowLeft, Shield, Lock, Share2, Database, Mail, CheckCircle2 } from 'lucide-react'
 import { acceptConsent, acceptConsentOnly } from '@/lib/actions/auth'
@@ -8,6 +8,14 @@ import { createClient } from '@/lib/supabase/client'
 import { track } from '@/lib/analytics'
 
 export default function ConsentPage() {
+  return (
+    <Suspense>
+      <ConsentPageInner />
+    </Suspense>
+  )
+}
+
+function ConsentPageInner() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const gmailOnly = searchParams.get('gmail_only') === 'true'
