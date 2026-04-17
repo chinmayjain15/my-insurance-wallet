@@ -75,5 +75,5 @@ export async function GET(request: NextRequest) {
   }
 
   console.log('[gmail-callback] Successfully stored Gmail tokens for user:', user.id)
-  return NextResponse.redirect(`${origin}/home`)
+  return NextResponse.redirect(`${origin}/home?gmail_connected=true`)
 }
