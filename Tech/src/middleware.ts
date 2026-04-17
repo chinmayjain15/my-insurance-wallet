@@ -11,7 +11,7 @@ const CONSENT_ROUTE = '/consent'
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
   const isProtected = PROTECTED.some((r) => pathname.startsWith(r))
-  const isAuthOnly = AUTH_ONLY.some((r) => pathname.startsWith(r))
+  const isAuthOnly = AUTH_ONLY.some((r) => pathname === r)
   const isConsent = pathname.startsWith(CONSENT_ROUTE)
 
   if (IS_STAGING) {
