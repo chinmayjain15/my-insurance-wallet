@@ -57,7 +57,7 @@ function ConsentPageInner() {
       await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback?gmail=true`,
+          redirectTo: `${window.location.origin}/auth/gmail-callback`,
           scopes: 'https://www.googleapis.com/auth/gmail.readonly',
           queryParams: {
             access_type: 'offline',
