@@ -8,6 +8,7 @@ export const DEMO_POLICIES: Policy[] = [
     fileName: 'star-health-policy.pdf',
     uploadedAt: '2024-01-15T00:00:00.000Z',
     sharedWith: ['contact_1', 'contact_3'],
+    source: 'upload',
   },
   {
     id: 'policy_health_2',
@@ -16,6 +17,7 @@ export const DEMO_POLICIES: Policy[] = [
     fileName: 'hdfc-health-policy.pdf',
     uploadedAt: '2024-02-20T00:00:00.000Z',
     sharedWith: ['contact_2'],
+    source: 'upload',
   },
   {
     id: 'policy_life_1',
@@ -23,7 +25,8 @@ export const DEMO_POLICIES: Policy[] = [
     type: 'Life',
     fileName: 'lic-life-policy.pdf',
     uploadedAt: '2024-01-10T00:00:00.000Z',
-    sharedWith: ['contact_3'],
+    sharedWith: ['contact_1'],
+    source: 'upload',
   },
   {
     id: 'policy_term_1',
@@ -31,7 +34,8 @@ export const DEMO_POLICIES: Policy[] = [
     type: 'Term',
     fileName: 'icici-term-policy.pdf',
     uploadedAt: '2024-03-05T00:00:00.000Z',
-    sharedWith: ['contact_1', 'contact_2'],
+    sharedWith: [],
+    source: 'upload',
   },
   {
     id: 'policy_vehicle_1',
@@ -40,6 +44,7 @@ export const DEMO_POLICIES: Policy[] = [
     fileName: 'honda-car-insurance.pdf',
     uploadedAt: '2024-02-15T00:00:00.000Z',
     sharedWith: [],
+    source: 'upload',
   },
   {
     id: 'policy_vehicle_2',
@@ -47,7 +52,8 @@ export const DEMO_POLICIES: Policy[] = [
     type: 'Vehicle',
     fileName: 'bike-insurance.pdf',
     uploadedAt: '2024-01-08T00:00:00.000Z',
-    sharedWith: ['contact_1'],
+    sharedWith: ['contact_2'],
+    source: 'upload',
   },
   {
     id: 'policy_other_1',
@@ -55,7 +61,8 @@ export const DEMO_POLICIES: Policy[] = [
     type: 'Other',
     fileName: 'home-insurance.pdf',
     uploadedAt: '2024-01-25T00:00:00.000Z',
-    sharedWith: ['contact_3'],
+    sharedWith: [],
+    source: 'upload',
   },
   {
     id: 'policy_other_2',
@@ -64,6 +71,7 @@ export const DEMO_POLICIES: Policy[] = [
     fileName: 'travel-insurance.pdf',
     uploadedAt: '2024-03-01T00:00:00.000Z',
     sharedWith: [],
+    source: 'upload',
   },
 ]
 

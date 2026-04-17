@@ -8,6 +8,7 @@ export interface Policy {
   fileUrl?: string
   uploadedAt: string // ISO string
   sharedWith: string[] // contact IDs
+  source: 'upload' | 'email'
 }
 
 export interface Contact {

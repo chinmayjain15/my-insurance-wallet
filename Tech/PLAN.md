@@ -42,61 +42,61 @@ Reduce friction for users by automatically finding and importing insurance polic
 
 ## Phase 3 — Gmail Scanner
 
-- [ ] **Gmail API — Fetch candidate emails**
-  Server action that uses the stored refresh token to get a fresh access token, then queries Gmail API for emails from the last 12 months that have PDF attachments (`has:attachment filename:pdf`).
+- [x] **Gmail API — Fetch candidate emails**
+  `src/lib/gmail/api.ts` — `refreshGmailAccessToken` + `searchGmailMessages`. Queries `has:attachment filename:pdf newer_than:365d`, returns up to 100 message IDs.
 
-- [ ] **Gmail API — Filter to non-personal senders**
-  Exclude emails from individual Gmail/Yahoo/Hotmail addresses. Keep emails from business domains.
+- [x] **Gmail API — Filter to non-personal senders**
+  `src/lib/gmail/classifier.ts` — `isPersonalSender`. Blocks gmail.com, yahoo.com, hotmail.com, outlook.com, icloud.com, protonmail.com, rediffmail.com, and more.
 
-- [ ] **Policy identification — Classify emails**
-  For each candidate email, check subject + sender + attachment name against known insurer signals (keywords, domain list). Determine policy type: Health / Life / Term / Vehicle / Other.
+- [x] **Policy identification — Classify emails**
+  `src/lib/gmail/classifier.ts` — `classifyByHeuristics`. Matches sender domain + subject/filename keywords across Health, Life, Term, and Vehicle signal lists.
 
-- [ ] **Policy identification — LLM fallback (if needed)**
-  If heuristics are insufficient, pass email metadata to Claude API for classification.
+- [x] **Policy identification — LLM fallback (if needed)**
+  `src/lib/gmail/classifier.ts` — `classifyWithLLM`. Calls `claude-haiku-4-5-20251001` when heuristics return null. Falls back to `Other` gracefully if `ANTHROPIC_API_KEY` is absent.
 
-- [ ] **Attachment download + storage**
-  Download PDF attachments via Gmail API. Upload to Supabase Storage under the user's folder. Create `policies` row with `source: 'email'`.
+- [x] **Attachment download + storage**
+  `src/lib/gmail/scanner.ts` + `src/lib/actions/gmail.ts` — `scanGmailForPolicies` + `triggerGmailScan`. Downloads PDF bytes, uploads to Supabase Storage, inserts `policies` row with `source: 'email'`, updates `last_scanned_at`, deduplicates by filename.
 
 ---
 
 ## Phase 4 — Import Review UI
 
-- [ ] **Import review screen**
-  After Gmail scan completes, show a list of found policies: "We found X policies in your email. Review and import."  Each item shows policy name, type, sender, date. User can confirm or dismiss each one.
+- [x] **Import review screen**
+  `/import-review` page. Shows all pending candidates from `gmail_scan_candidates` with checkboxes. Header shows count + select-all toggle. Each row shows filename, type badge, sender, date.
 
-- [ ] **Import confirmation action**
-  Server action to finalize selected policies into the `policies` table.
+- [x] **Import confirmation action**
+  `importSelected(ids)` in `src/lib/actions/gmail-import.ts`. Downloads PDFs on confirm, uploads to Supabase Storage, creates `policies` rows with `source: 'email'`, deletes confirmed candidates.
 
-- [ ] **Skip / defer option**
-  User can skip the review and import later from Settings.
+- [x] **Skip / defer option**
+  "Skip for now" button calls `dismissAll()` — deletes all pending candidates and redirects to `/home`. Candidates persist in DB until dismissed, so user can return to `/import-review` any time.
 
 ---
 
 ## Phase 5 — Policies Page UI
 
-- [ ] **Source badge on policy cards**
-  Show a small "From email" or "Uploaded" tag on each policy card in the `/policies` list.
+- [x] **Source badge on policy cards**
+  Email-imported policies show a small "From email" badge (mail icon + text) next to the type chip. Upload policies show nothing extra.
 
-- [ ] **Settings — "Scan again" option**
-  Allow users to re-trigger an email scan from the Settings page (in case new policies arrived after initial scan).
+- [x] **Settings — "Scan again" option**
+  New "Email Import" section in Settings with a "Scan email again" row. Triggers `triggerGmailScan`, then redirects to `/import-review` if candidates are found, or shows "No new policies found" inline.
 
 ---
 
 ## Phase 6 — Edge Cases & Hardening
 
-- [ ] **Token refresh logic**
-  Access token expires in 1 hour. Implement refresh using the stored `refresh_token` before each Gmail API call.
+- [x] **Token refresh logic**
+  Already implemented from Phase 3 — every scan and import call starts with `refreshGmailAccessToken(refresh_token)`.
 
-- [ ] **Password-protected PDFs**
-  Detect and flag password-protected PDFs rather than silently failing to import them.
+- [x] **Password-protected PDFs**
+  `src/lib/gmail/pdf-utils.ts` — `isPdfPasswordProtected` checks for `/Encrypt` in the first 16 KB. `importSelected` skips these and returns a `passwordProtected` count. The import success screen surfaces the count to the user.
 
-- [ ] **Duplicate detection**
-  Before importing, check if a policy with the same file name or Gmail message ID already exists for the user.
+- [x] **Duplicate detection**
+  `gmail_message_id` column added to `policies` (migration: `supabase/add_gmail_message_id.sql`). `triggerGmailScan` filters out already-imported message IDs before adding to candidates. `importSelected` checks both `gmail_message_id` and `file_name`, and stores `gmail_message_id` on successful import.
 
-- [ ] **Revoke / disconnect Gmail**
-  Allow users to disconnect Gmail access from Settings. Deletes the `gmail_tokens` row and revokes the token with Google.
+- [x] **Revoke / disconnect Gmail**
+  `src/lib/actions/gmail-disconnect.ts` — revokes token with Google, deletes `gmail_tokens` row and pending candidates. "Email Import" section in Settings now has "Scan email again" + "Disconnect Gmail" with a confirmation sheet.
 
 ---
 
 ## Current Status
-**Phase 2 complete.** Ready to start Phase 3 — Gmail scanner.
+**All phases complete.** Full email auto-import feature shipped.

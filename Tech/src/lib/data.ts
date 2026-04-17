@@ -23,7 +23,7 @@ export async function getUserData(email: string): Promise<{
     const [{ data: rawPolicies }, { data: rawContacts }] = await Promise.all([
       supabase
         .from('policies')
-        .select('id, name, type, file_url, file_name, created_at')
+        .select('id, name, type, file_url, file_name, created_at, source')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false }),
       supabase
@@ -57,6 +57,7 @@ export async function getUserData(email: string): Promise<{
       fileUrl: p.file_url ?? undefined,
       uploadedAt: p.created_at,
       sharedWith: sharedWithMap[p.id] ?? [],
+      source: (p.source ?? 'upload') as 'upload' | 'email',
     }))
 
     contacts = (rawContacts ?? []).map(c => ({

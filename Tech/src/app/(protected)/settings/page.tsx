@@ -9,6 +9,7 @@ import { signOut, deleteAccount } from '@/lib/actions/auth'
 import { useTheme } from '@/components/ThemeProvider'
 import { useAppData } from '@/components/AppDataProvider'
 import { track } from '@/lib/analytics'
+import ScanAgainButton from './ScanAgainButton'
 
 export default function SettingsPage() {
   const { theme, toggleTheme } = useTheme()
@@ -104,6 +105,14 @@ export default function SettingsPage() {
                 </div>
               </div>
             </button>
+          </div>
+        </div>
+
+        {/* Gmail */}
+        <div>
+          <h3 className="mb-3">Email Import</h3>
+          <div className="bg-card border border-border rounded-xl overflow-hidden">
+            <ScanAgainButton />
           </div>
         </div>
 

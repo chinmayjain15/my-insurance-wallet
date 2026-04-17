@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Plus, FileText, Share2, ArrowLeft } from 'lucide-react'
+import { Plus, FileText, Share2, ArrowLeft, Mail } from 'lucide-react'
 import EmptyState from '@/components/ui/EmptyState'
 import { useAppData } from '@/components/AppDataProvider'
 import { PolicyType } from '@/types'
@@ -123,6 +123,12 @@ export default function PoliciesPage() {
                                 <span className={`inline-flex px-2 py-0.5 rounded-md text-xs ${colors.bg} ${colors.text}`}>
                                   {policy.type}
                                 </span>
+                                {policy.source === 'email' && (
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs bg-muted text-muted-foreground">
+                                    <Mail className="w-3 h-3" />
+                                    From email
+                                  </span>
+                                )}
                                 <span className="text-xs text-muted-foreground">
                                   {new Date(policy.uploadedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
                                 </span>
@@ -163,6 +169,12 @@ export default function PoliciesPage() {
                           <span className={`inline-flex px-2 py-0.5 rounded-md text-xs ${colors.bg} ${colors.text}`}>
                             {policy.type}
                           </span>
+                          {policy.source === 'email' && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs bg-muted text-muted-foreground">
+                              <Mail className="w-3 h-3" />
+                              From email
+                            </span>
+                          )}
                           <span className="text-xs text-muted-foreground">
                             {new Date(policy.uploadedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
                           </span>
