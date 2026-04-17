@@ -35,7 +35,7 @@ Reduce friction for users by automatically finding and importing insurance polic
 - [x] **Auth callback — Store Gmail tokens**
   Detects `?gmail=true`, extracts `provider_token` + `provider_refresh_token`, upserts into `gmail_tokens` table.
 
-- [ ] **End-to-end test — Consent + token storage**
+- [x] **End-to-end test — Consent + token storage**
   Sign in → consent page → opt in → Google OAuth → `/home`. Verify `gmail_tokens` row exists in Supabase.
 
 ---
@@ -99,4 +99,4 @@ Reduce friction for users by automatically finding and importing insurance polic
 ---
 
 ## Current Status
-Working through **Phase 2** — testing the end-to-end consent + token storage flow.
+**Phase 2 complete.** Ready to start Phase 3 — Gmail scanner.
