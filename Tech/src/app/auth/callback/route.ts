@@ -82,7 +82,7 @@ export async function GET(request: NextRequest) {
   // Normal sign-in callback
   const { data: existingUser } = await serviceClient
     .from('users')
-    .select('consent_given')
+    .select('id, consent_given')
     .eq('email', email)
     .single()
 
@@ -96,5 +96,22 @@ export async function GET(request: NextRequest) {
     path: '/',
   })
 
-  return NextResponse.redirect(`${origin}${consentGiven ? '/home' : '/consent'}`)
+  if (!consentGiven) {
+    return NextResponse.redirect(`${origin}/consent`)
+  }
+
+  // Returning user — check if Gmail is connected; if not, prompt them to connect
+  if (existingUser?.id) {
+    const { data: gmailToken } = await serviceClient
+      .from('gmail_tokens')
+      .select('user_id')
+      .eq('user_id', existingUser.id)
+      .single()
+
+    if (!gmailToken) {
+      return NextResponse.redirect(`${origin}/consent?gmail_only=true`)
+    }
+  }
+
+  return NextResponse.redirect(`${origin}/home`)
 }

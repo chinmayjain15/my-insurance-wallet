@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { ArrowLeft, Shield, Lock, Share2, Database, Mail, CheckCircle2 } from 'lucide-react'
 import { acceptConsent, acceptConsentOnly } from '@/lib/actions/auth'
 import { createClient } from '@/lib/supabase/client'
@@ -9,9 +9,12 @@ import { track } from '@/lib/analytics'
 
 export default function ConsentPage() {
   const router = useRouter()
-  const [accepted, setAccepted] = useState(false)
-  const [hasScrolled, setHasScrolled] = useState(false)
-  const [gmailOptIn, setGmailOptIn] = useState(false)
+  const searchParams = useSearchParams()
+  const gmailOnly = searchParams.get('gmail_only') === 'true'
+
+  const [accepted, setAccepted] = useState(gmailOnly)
+  const [hasScrolled, setHasScrolled] = useState(gmailOnly)
+  const [gmailOptIn, setGmailOptIn] = useState(gmailOnly)
   const [isPending, setIsPending] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
   const viewTracked = useRef(false)
@@ -75,16 +78,18 @@ export default function ConsentPage() {
       </div>
 
       <div className="flex-1 flex flex-col max-w-lg mx-auto w-full pb-8">
-        <h2 className="mb-2 text-foreground">Privacy &amp; Data Use</h2>
+        <h2 className="mb-2 text-foreground">{gmailOnly ? 'Connect your Gmail' : 'Privacy & Data Use'}</h2>
         <p className="text-muted-foreground mb-6">
-          Please review how we handle your information
+          {gmailOnly
+            ? 'We found that your Gmail isn\'t connected yet. Connect it to auto-import your insurance policies.'
+            : 'Please review how we handle your information'}
         </p>
 
-        {/* Scrollable consent content */}
+        {/* Scrollable consent content — hidden in gmail_only mode */}
         <div
           ref={scrollRef}
           onScroll={handleScroll}
-          className="flex-1 overflow-y-auto bg-card border border-border rounded-xl p-5 mb-6 space-y-5"
+          className={`flex-1 overflow-y-auto bg-card border border-border rounded-xl p-5 mb-6 space-y-5 ${gmailOnly ? 'hidden' : ''}`}
           style={{ maxHeight: '50vh' }}
         >
           <div className="space-y-5">
@@ -154,8 +159,8 @@ export default function ConsentPage() {
           )}
         </div>
 
-        {/* Checkbox */}
-        <label className="flex items-start gap-3 cursor-pointer mb-6">
+        {/* Checkbox — hidden in gmail_only mode */}
+        <label className={`flex items-start gap-3 cursor-pointer mb-6 ${gmailOnly ? 'hidden' : ''}`}>
           <div className="flex items-center h-6">
             <input
               type="checkbox"
@@ -212,7 +217,7 @@ export default function ConsentPage() {
           disabled={!accepted || !hasScrolled || isPending}
           className="w-full bg-primary text-primary-foreground rounded-xl px-6 py-3 font-medium hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {isPending ? 'Please wait…' : 'Accept & Continue'}
+          {isPending ? 'Please wait…' : gmailOnly ? 'Connect Gmail' : 'Accept & Continue'}
         </button>
       </div>
     </div>
