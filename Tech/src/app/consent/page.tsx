@@ -2,14 +2,17 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Shield, Lock, Share2, Database } from 'lucide-react'
-import { acceptConsent } from '@/lib/actions/auth'
+import { ArrowLeft, Shield, Lock, Share2, Database, Mail, CheckCircle2 } from 'lucide-react'
+import { acceptConsent, acceptConsentOnly } from '@/lib/actions/auth'
+import { createClient } from '@/lib/supabase/client'
 import { track } from '@/lib/analytics'
 
 export default function ConsentPage() {
   const router = useRouter()
   const [accepted, setAccepted] = useState(false)
   const [hasScrolled, setHasScrolled] = useState(false)
+  const [gmailOptIn, setGmailOptIn] = useState(false)
+  const [isPending, setIsPending] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
   const viewTracked = useRef(false)
 
@@ -23,6 +26,38 @@ export default function ConsentPage() {
     const el = scrollRef.current
     if (el && el.scrollHeight - el.scrollTop <= el.clientHeight + 10) {
       setHasScrolled(true)
+    }
+  }
+
+  async function handleContinue() {
+    if (!accepted || !hasScrolled || isPending) return
+    setIsPending(true)
+    track('continue-clicked', { screen: 'consent', label: 'accept-and-continue', gmail_opt_in: gmailOptIn })
+
+    if (gmailOptIn) {
+      // Save consent first, then trigger Gmail OAuth
+      const result = await acceptConsentOnly()
+      if ('error' in result) {
+        setIsPending(false)
+        return
+      }
+      track('action-completed', { screen: 'consent', label: 'sign-in' })
+      const supabase = createClient()
+      await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback?gmail=true`,
+          scopes: 'https://www.googleapis.com/auth/gmail.readonly',
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          },
+        },
+      })
+      // OAuth redirects the page — no further code runs
+    } else {
+      track('action-completed', { screen: 'consent', label: 'sign-in' })
+      await acceptConsent()
     }
   }
 
@@ -120,7 +155,7 @@ export default function ConsentPage() {
         </div>
 
         {/* Checkbox */}
-        <label className="flex items-start gap-3 cursor-pointer mb-4">
+        <label className="flex items-start gap-3 cursor-pointer mb-6">
           <div className="flex items-center h-6">
             <input
               type="checkbox"
@@ -135,19 +170,50 @@ export default function ConsentPage() {
           </span>
         </label>
 
+        {/* Gmail opt-in */}
+        <div
+          className={`rounded-xl border-2 p-4 mb-6 transition-colors ${
+            gmailOptIn ? 'border-primary bg-accent/50' : 'border-border bg-card'
+          }`}
+        >
+          <div className="flex items-start gap-3">
+            <div className="bg-accent rounded-lg p-2 shrink-0">
+              <Mail className="w-5 h-5 text-primary" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center justify-between gap-2 mb-1">
+                <h4 className="text-foreground text-sm font-medium">Auto-import from email</h4>
+                <span className="text-xs text-muted-foreground shrink-0">Optional</span>
+              </div>
+              <p className="text-xs text-muted-foreground leading-relaxed mb-3">
+                Allow us to scan your last 12 months of emails to find insurance policies sent by insurers and import them automatically. We only read emails — we never send, delete, or modify anything.
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  setGmailOptIn(v => !v)
+                  track('toggle-clicked', { screen: 'consent', label: 'gmail-opt-in', value: !gmailOptIn })
+                }}
+                className={`flex items-center gap-2 text-sm font-medium transition-colors ${
+                  gmailOptIn ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                <CheckCircle2 className={`w-4 h-4 ${gmailOptIn ? 'text-primary' : 'text-muted-foreground'}`} />
+                {gmailOptIn ? 'Yes, scan my email for policies' : 'Enable email scanning'}
+              </button>
+            </div>
+          </div>
+        </div>
+
         {/* Accept button */}
-        <form action={acceptConsent} onSubmit={() => {
-          track('continue-clicked', { screen: 'consent', label: 'accept-and-continue' })
-          track('action-completed', { screen: 'consent', label: 'sign-in' })
-        }}>
-          <button
-            type="submit"
-            disabled={!accepted || !hasScrolled}
-            className="w-full bg-primary text-primary-foreground rounded-xl px-6 py-3 font-medium hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Accept &amp; Continue
-          </button>
-        </form>
+        <button
+          type="button"
+          onClick={handleContinue}
+          disabled={!accepted || !hasScrolled || isPending}
+          className="w-full bg-primary text-primary-foreground rounded-xl px-6 py-3 font-medium hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {isPending ? 'Please wait…' : 'Accept & Continue'}
+        </button>
       </div>
     </div>
   )

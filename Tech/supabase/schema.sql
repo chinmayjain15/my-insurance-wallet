@@ -24,6 +24,7 @@ CREATE TABLE IF NOT EXISTS public.users (
 
 -- Policies
 -- Each policy belongs to one user. File is stored in Supabase Storage.
+-- source: 'upload' = manually uploaded by user, 'email' = auto-imported from Gmail
 CREATE TABLE IF NOT EXISTS public.policies (
   id              UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id         UUID        NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
@@ -32,7 +33,20 @@ CREATE TABLE IF NOT EXISTS public.policies (
   file_url        TEXT,
   file_name       TEXT        NOT NULL,
   file_size_bytes INTEGER,
+  source          TEXT        NOT NULL DEFAULT 'upload' CHECK (source IN ('upload', 'email')),
   created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Gmail Tokens
+-- Stores Google OAuth tokens for users who granted Gmail read access.
+-- Used to call Gmail API server-side to scan for insurance policy emails.
+CREATE TABLE IF NOT EXISTS public.gmail_tokens (
+  id                  UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id             UUID        NOT NULL UNIQUE REFERENCES public.users(id) ON DELETE CASCADE,
+  access_token        TEXT        NOT NULL,
+  refresh_token       TEXT        NOT NULL,
+  granted_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  last_scanned_at     TIMESTAMPTZ
 );
 
 -- Contacts
@@ -63,6 +77,7 @@ CREATE TABLE IF NOT EXISTS public.policy_shares (
 -- =============================================================
 
 CREATE INDEX IF NOT EXISTS idx_policies_user_id      ON public.policies(user_id);
+CREATE INDEX IF NOT EXISTS idx_gmail_tokens_user_id  ON public.gmail_tokens(user_id);
 CREATE INDEX IF NOT EXISTS idx_contacts_owner_id     ON public.contacts(owner_id);
 CREATE INDEX IF NOT EXISTS idx_policy_shares_policy  ON public.policy_shares(policy_id);
 CREATE INDEX IF NOT EXISTS idx_policy_shares_contact ON public.policy_shares(contact_id);
@@ -80,6 +95,7 @@ ALTER TABLE public.users         ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.policies      ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.contacts      ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.policy_shares ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.gmail_tokens  ENABLE ROW LEVEL SECURITY;
 
 -- Users: can only read and update their own row
 CREATE POLICY "users_select_own" ON public.users
@@ -105,6 +121,28 @@ CREATE POLICY "policies_update_own" ON public.policies
   );
 
 CREATE POLICY "policies_delete_own" ON public.policies
+  FOR DELETE USING (
+    user_id IN (SELECT id FROM public.users WHERE auth.uid()::text = id::text)
+  );
+
+-- Gmail Tokens: only the owning user can access their own tokens
+-- (service_role key used server-side bypasses these for scanning)
+CREATE POLICY "gmail_tokens_select_own" ON public.gmail_tokens
+  FOR SELECT USING (
+    user_id IN (SELECT id FROM public.users WHERE auth.uid()::text = id::text)
+  );
+
+CREATE POLICY "gmail_tokens_insert_own" ON public.gmail_tokens
+  FOR INSERT WITH CHECK (
+    user_id IN (SELECT id FROM public.users WHERE auth.uid()::text = id::text)
+  );
+
+CREATE POLICY "gmail_tokens_update_own" ON public.gmail_tokens
+  FOR UPDATE USING (
+    user_id IN (SELECT id FROM public.users WHERE auth.uid()::text = id::text)
+  );
+
+CREATE POLICY "gmail_tokens_delete_own" ON public.gmail_tokens
   FOR DELETE USING (
     user_id IN (SELECT id FROM public.users WHERE auth.uid()::text = id::text)
   );

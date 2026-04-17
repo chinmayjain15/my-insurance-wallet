@@ -7,6 +7,7 @@ export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
   const error = searchParams.get('error')
+  const isGmailCallback = searchParams.get('gmail') === 'true'
 
   if (error || !code) {
     return NextResponse.redirect(`${origin}/auth?error=auth_failed`)
@@ -32,9 +33,35 @@ export async function GET(request: NextRequest) {
   }
 
   const email = session.user.email.toLowerCase()
-
   const { createServiceClient } = await import('@/lib/supabase/service')
   const serviceClient = createServiceClient()
+
+  // Gmail OAuth callback: store tokens and go home
+  if (isGmailCallback) {
+    const accessToken = session.provider_token
+    const refreshToken = session.provider_refresh_token
+
+    if (accessToken && refreshToken) {
+      const { data: user } = await serviceClient
+        .from('users')
+        .select('id')
+        .eq('email', email)
+        .single()
+
+      if (user) {
+        await serviceClient
+          .from('gmail_tokens')
+          .upsert(
+            { user_id: user.id, access_token: accessToken, refresh_token: refreshToken },
+            { onConflict: 'user_id' }
+          )
+      }
+    }
+
+    return NextResponse.redirect(`${origin}/home`)
+  }
+
+  // Normal sign-in callback
   const { data: existingUser } = await serviceClient
     .from('users')
     .select('consent_given')

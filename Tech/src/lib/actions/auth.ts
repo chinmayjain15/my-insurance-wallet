@@ -62,6 +62,28 @@ export async function acceptConsent(): Promise<void> {
   redirect('/home')
 }
 
+// Same as acceptConsent but returns instead of redirecting,
+// so the client can decide what to do next (e.g. trigger Gmail OAuth).
+export async function acceptConsentOnly(): Promise<{ email: string } | { error: string }> {
+  const cookieStore = await cookies()
+  const session = cookieStore.get(STAGING_COOKIE)
+  if (!session) return { error: 'Not authenticated' }
+
+  const data = JSON.parse(session.value)
+  cookieStore.set(
+    STAGING_COOKIE,
+    JSON.stringify({ ...data, consentGiven: true }),
+    COOKIE_OPTIONS
+  )
+
+  const supabase = createServiceClient()
+  await supabase
+    .from('users')
+    .upsert({ email: data.email, consent_given: true, consent_given_at: new Date().toISOString() }, { onConflict: 'email' })
+
+  return { email: data.email }
+}
+
 export async function demoSignIn(): Promise<void> {
   const cookieStore = await cookies()
   cookieStore.set(
