@@ -41,23 +41,41 @@ export async function GET(request: NextRequest) {
     const accessToken = session.provider_token
     const refreshToken = session.provider_refresh_token
 
-    if (accessToken && refreshToken) {
-      const { data: user } = await serviceClient
-        .from('users')
-        .select('id')
-        .eq('email', email)
-        .single()
+    console.log('[gmail-callback] email:', email)
+    console.log('[gmail-callback] provider_token present:', !!accessToken)
+    console.log('[gmail-callback] provider_refresh_token present:', !!refreshToken)
 
-      if (user) {
-        await serviceClient
-          .from('gmail_tokens')
-          .upsert(
-            { user_id: user.id, access_token: accessToken, refresh_token: refreshToken },
-            { onConflict: 'user_id' }
-          )
-      }
+    if (!accessToken || !refreshToken) {
+      console.error('[gmail-callback] Missing tokens — provider_token:', accessToken, 'provider_refresh_token:', refreshToken)
+      return NextResponse.redirect(`${origin}/home?gmail_error=missing_tokens`)
     }
 
+    const { data: user, error: userError } = await serviceClient
+      .from('users')
+      .select('id')
+      .eq('email', email)
+      .single()
+
+    console.log('[gmail-callback] user lookup result:', user?.id, 'error:', userError?.message)
+
+    if (!user) {
+      console.error('[gmail-callback] User not found for email:', email)
+      return NextResponse.redirect(`${origin}/home?gmail_error=user_not_found`)
+    }
+
+    const { error: upsertError } = await serviceClient
+      .from('gmail_tokens')
+      .upsert(
+        { user_id: user.id, access_token: accessToken, refresh_token: refreshToken },
+        { onConflict: 'user_id' }
+      )
+
+    if (upsertError) {
+      console.error('[gmail-callback] Upsert failed:', upsertError.message)
+      return NextResponse.redirect(`${origin}/home?gmail_error=upsert_failed`)
+    }
+
+    console.log('[gmail-callback] Successfully stored Gmail tokens for user:', user.id)
     return NextResponse.redirect(`${origin}/home`)
   }
 
