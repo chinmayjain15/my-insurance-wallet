@@ -75,6 +75,15 @@ const VEHICLE_SIGNALS: Signals = {
   ],
 }
 
+// Patterns that indicate the attachment is a transactional document, not a policy.
+// Returning null here lets the LLM make the final call (with the "Not Insurance" option).
+const NON_POLICY_PATTERNS = [
+  'premium receipt', 'payment receipt', 'payment confirmation', 'premium paid',
+  'claim form', 'claim settlement', 'claim intimation',
+  'proposal form', 'kyc document',
+  'renewal reminder', 'renewal notice', 'payment due', 'outstanding premium',
+]
+
 function hits(text: string, senderDomain: string, signals: Signals): boolean {
   if (signals.domains.some(d => senderDomain.endsWith(d))) return true
   return signals.keywords.some(kw => text.includes(kw))
@@ -83,10 +92,15 @@ function hits(text: string, senderDomain: string, signals: Signals): boolean {
 export function classifyByHeuristics(
   from: string,
   subject: string,
-  filename: string
+  filename: string,
+  snippet: string = ''
 ): PolicyType | null {
   const senderDomain = extractSenderEmail(from).split('@')[1] ?? ''
-  const text = `${subject} ${filename}`.toLowerCase()
+  const text = `${subject} ${filename} ${snippet}`.toLowerCase()
+
+  // If the combined text clearly identifies a non-policy document, skip heuristics
+  // and let the LLM make the final determination (it can return "Not Insurance").
+  if (NON_POLICY_PATTERNS.some(p => text.includes(p))) return null
 
   // Check Term before Life (Term is a more-specific subset of Life)
   if (hits(text, senderDomain, TERM_SIGNALS)) return 'Term'
@@ -100,32 +114,42 @@ export function classifyByHeuristics(
 // ─── LLM fallback via Claude API ─────────────────────────────────────────────
 
 // Called only when heuristics return null. Uses claude-haiku for speed and cost.
-// Falls back to 'Other' on any error (network, missing API key, unexpected response).
+// Returns null when the LLM determines the attachment is NOT an insurance policy
+// document (e.g. premium receipt, claim form, renewal notice). The caller should
+// discard the candidate in that case.
+// Falls back to null on any error so we err on the side of fewer false positives.
 export async function classifyWithLLM(
   from: string,
   subject: string,
-  filename: string
-): Promise<PolicyType> {
+  filename: string,
+  snippet: string = ''
+): Promise<PolicyType | null> {
   const apiKey = process.env.ANTHROPIC_API_KEY
-  if (!apiKey) return 'Other'
+  if (!apiKey) return null
 
-  const prompt = `You are classifying an insurance policy email for an Indian user.
+  const snippetLine = snippet ? `- Email preview: ${snippet.slice(0, 300)}` : ''
+
+  const prompt = `You are reviewing an email to decide whether its PDF attachment is an insurance POLICY DOCUMENT for an Indian user.
 
 Email metadata:
 - From: ${from}
 - Subject: ${subject}
 - Attachment filename: ${filename}
+${snippetLine}
 
-Classify into exactly one of: Health, Life, Term, Vehicle, Other
+Step 1 — Is the attachment a policy document?
+A policy document is a policy schedule, e-policy, certificate of insurance, or cover note issued by an insurer.
+It is NOT a policy if it is a: premium receipt, payment confirmation, claim form, claim settlement letter, renewal reminder, proposal form, KYC document, or marketing email.
 
-Definitions:
-- Term = pure protection life insurance (no savings)
-- Life = endowment, ULIP, money-back, whole life
-- Health = mediclaim, family floater, critical illness
-- Vehicle = car, bike, commercial vehicle
-- Other = travel, home, gadget, or anything else
+Step 2 — If it IS a policy document, classify it:
+- Term   = pure protection life insurance (no savings component)
+- Life   = endowment, ULIP, money-back, whole life, savings plan
+- Health = mediclaim, family floater, critical illness, super top-up
+- Vehicle = car, bike, two-wheeler, commercial vehicle insurance
+- Other  = travel, home, gadget, or any other insurance type
 
-Respond with a single word only.`
+Respond with EXACTLY one of these words: Term, Life, Health, Vehicle, Other, Not Insurance
+No explanation. Single response only.`
 
   try {
     const res = await fetch('https://api.anthropic.com/v1/messages', {
@@ -142,13 +166,14 @@ Respond with a single word only.`
       }),
     })
 
-    if (!res.ok) return 'Other'
+    if (!res.ok) return null
 
     const data = await res.json()
     const text = (data.content?.[0]?.text ?? '').trim()
+    if (text === 'Not Insurance') return null
     const valid: PolicyType[] = ['Health', 'Life', 'Term', 'Vehicle', 'Other']
-    return valid.includes(text as PolicyType) ? (text as PolicyType) : 'Other'
+    return valid.includes(text as PolicyType) ? (text as PolicyType) : null
   } catch {
-    return 'Other'
+    return null
   }
 }

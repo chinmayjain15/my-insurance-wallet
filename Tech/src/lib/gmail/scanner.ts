@@ -36,9 +36,13 @@ export async function scanGmailCandidates(accessToken: string): Promise<PolicyCa
       if (att.size < MIN_ATTACHMENT_BYTES) continue
 
       // Classify — heuristics first, LLM only as fallback.
+      // null means the document is not an insurance policy (receipt, claim form, etc.)
+      // and should be skipped entirely rather than surfaced to the user.
       const policyType =
-        classifyByHeuristics(meta.from, meta.subject, att.filename) ??
-        (await classifyWithLLM(meta.from, meta.subject, att.filename))
+        classifyByHeuristics(meta.from, meta.subject, att.filename, meta.snippet) ??
+        (await classifyWithLLM(meta.from, meta.subject, att.filename, meta.snippet))
+
+      if (policyType === null) continue
 
       results.push({
         messageId: msgId,

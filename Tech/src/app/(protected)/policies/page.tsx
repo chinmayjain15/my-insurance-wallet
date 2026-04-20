@@ -8,6 +8,7 @@ import EmptyState from '@/components/ui/EmptyState'
 import { useAppData } from '@/components/AppDataProvider'
 import { PolicyType } from '@/types'
 import { track } from '@/lib/analytics'
+import { getExpiryStatus, expiryLabel } from '@/lib/utils'
 
 const POLICY_TYPES: Array<PolicyType | 'All'> = ['All', 'Health', 'Life', 'Term', 'Vehicle', 'Other']
 
@@ -133,6 +134,19 @@ export default function PoliciesPage() {
                                   {new Date(policy.uploadedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
                                 </span>
                               </div>
+                              {policy.details?.expiryDate && (() => {
+                                const status = getExpiryStatus(policy.details.expiryDate)
+                                if (status === 'ok') return null
+                                return (
+                                  <span className={`inline-flex mt-1 px-2 py-0.5 rounded-md text-xs font-medium ${
+                                    status === 'expired'
+                                      ? 'bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-400'
+                                      : 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400'
+                                  }`}>
+                                    {expiryLabel(policy.details.expiryDate)}
+                                  </span>
+                                )
+                              })()}
                               {policy.sharedWith.length > 0 && (
                                 <p className="text-xs text-muted-foreground mt-1">
                                   Shared with {policy.sharedWith.map(getContactName).join(', ')}
@@ -179,6 +193,19 @@ export default function PoliciesPage() {
                             {new Date(policy.uploadedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
                           </span>
                         </div>
+                        {policy.details?.expiryDate && (() => {
+                          const status = getExpiryStatus(policy.details.expiryDate)
+                          if (status === 'ok') return null
+                          return (
+                            <span className={`inline-flex mt-1 px-2 py-0.5 rounded-md text-xs font-medium ${
+                              status === 'expired'
+                                ? 'bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-400'
+                                : 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400'
+                            }`}>
+                              {expiryLabel(policy.details.expiryDate)}
+                            </span>
+                          )
+                        })()}
                         {policy.sharedWith.length > 0 && (
                           <p className="text-xs text-muted-foreground mt-1">
                             Shared with {policy.sharedWith.map(getContactName).join(', ')}

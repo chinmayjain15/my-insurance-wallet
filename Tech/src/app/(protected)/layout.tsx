@@ -1,35 +1,33 @@
-import { cookies } from 'next/headers'
-import { STAGING_COOKIE } from '@/lib/constants'
 import { AppDataProvider } from '@/components/AppDataProvider'
 import { AmplitudeIdentify } from '@/components/AmplitudeIdentify'
 import BottomNav from '@/components/layout/BottomNav'
 import { getUserData } from '@/lib/data'
 import { getUserName } from '@/lib/actions/profile'
+import { getSessionData } from '@/lib/session'
 import { Policy, Contact, SharedPolicy } from '@/types'
 
 export default async function ProtectedLayout({ children }: { children: React.ReactNode }) {
-  const cookieStore = await cookies()
-  const session = cookieStore.get(STAGING_COOKIE)
-  const sessionData = session ? JSON.parse(session.value) : null
-  const isDemo = sessionData?.isDemo === true
+  const sessionData = await getSessionData()
+  const { email, isDemo } = sessionData
 
   let initialPolicies: Policy[] = []
   let initialContacts: Contact[] = []
   let initialSharedPolicies: SharedPolicy[] = []
-  let userName: string | null = null
+  let userName: string | null = sessionData.name
   let userId: string | null = null
 
-  if (!isDemo && sessionData?.email) {
+  if (!isDemo && email) {
     try {
-      const [data, name] = await Promise.all([
-        getUserData(sessionData.email),
-        getUserName(sessionData.email),
+      const [data, dbName] = await Promise.all([
+        getUserData(email),
+        getUserName(email),
       ])
       userId = data.userId
       initialPolicies = data.policies
       initialContacts = data.contacts
       initialSharedPolicies = data.sharedPolicies
-      userName = name
+      // Prefer DB name (user-set) over OAuth metadata name
+      userName = dbName ?? sessionData.name
     } catch {
       // Non-fatal: render with empty data
     }
@@ -39,7 +37,7 @@ export default async function ProtectedLayout({ children }: { children: React.Re
     <AppDataProvider
       isDemo={isDemo}
       userId={userId}
-      userEmail={sessionData?.email ?? ''}
+      userEmail={email ?? ''}
       userName={userName}
       initialPolicies={initialPolicies}
       initialContacts={initialContacts}

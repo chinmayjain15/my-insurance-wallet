@@ -10,6 +10,7 @@ export interface GmailMessageMeta {
   subject: string
   from: string
   date: string
+  snippet: string
   attachments: GmailAttachmentMeta[]
 }
 
@@ -39,10 +40,23 @@ export async function refreshGmailAccessToken(refreshToken: string): Promise<str
   return data.access_token as string
 }
 
-// Search the user's mailbox for emails that have PDF attachments from the last 12 months.
-// Returns up to 100 message IDs (sufficient for most inboxes; pagination deferred to Phase 6).
+// Known insurer name fragments used to narrow the Gmail search via from: filters.
+// Substring matches are enough — Gmail matches these against sender name and address.
+const INSURER_FROM_FRAGMENTS = [
+  'hdfclife', 'iciciprulife', 'licindia', 'sbilife', 'maxlife',
+  'kotaklife', 'bajajlife', 'tataaig', 'starhealth', 'hdfcergo',
+  'niva-bupa', 'nivabupa', 'careinsurance', 'acko', 'godigit',
+  'policybazaar', 'turtlemint', 'bajajfinserv', 'pnbmetlife', 'reliancelife',
+]
+
+// Search the user's mailbox for emails that likely contain insurance policy PDFs.
+// Combines known insurer from: fragments with subject keywords to reduce noise before
+// any metadata fetching or classification occurs.
 export async function searchGmailMessages(accessToken: string): Promise<string[]> {
-  const query = 'has:attachment filename:pdf newer_than:365d'
+  const fromClauses = INSURER_FROM_FRAGMENTS.map(f => `from:${f}`).join(' OR ')
+  const query =
+    `has:attachment filename:pdf newer_than:365d ` +
+    `(subject:insurance OR subject:policy OR subject:mediclaim OR subject:premium OR subject:coverage OR ${fromClauses})`
   const url = `https://gmail.googleapis.com/gmail/v1/users/me/messages?q=${encodeURIComponent(query)}&maxResults=100`
 
   const res = await fetch(url, {
@@ -108,6 +122,7 @@ export async function getMessageMetadata(
     subject: get('Subject'),
     from: get('From'),
     date: get('Date'),
+    snippet: (msg.snippet as string) ?? '',
     attachments,
   }
 }

@@ -50,14 +50,25 @@ export async function signInWithEmail(
 }
 
 export async function acceptConsent(): Promise<void> {
-  const cookieStore = await cookies()
-  const session = cookieStore.get(STAGING_COOKIE)
-  if (!session) redirect('/auth')
-  const data = JSON.parse(session.value)
-  cookieStore.set(
-    STAGING_COOKIE,
-    JSON.stringify({ ...data, consentGiven: true }),
-    COOKIE_OPTIONS
+  if (IS_STAGING) {
+    const cookieStore = await cookies()
+    const session = cookieStore.get(STAGING_COOKIE)
+    if (!session) redirect('/auth')
+    const data = JSON.parse(session.value)
+    cookieStore.set(STAGING_COOKIE, JSON.stringify({ ...data, consentGiven: true }), COOKIE_OPTIONS)
+    redirect('/home')
+  }
+
+  // Production: get email from Supabase session, persist consent in DB
+  const { createClient } = await import('@/lib/supabase/server')
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user?.email) redirect('/auth')
+
+  const serviceClient = createServiceClient()
+  await serviceClient.from('users').upsert(
+    { email: user.email.toLowerCase(), consent_given: true, consent_given_at: new Date().toISOString() },
+    { onConflict: 'email' }
   )
   redirect('/home')
 }
@@ -65,23 +76,35 @@ export async function acceptConsent(): Promise<void> {
 // Same as acceptConsent but returns instead of redirecting,
 // so the client can decide what to do next (e.g. trigger Gmail OAuth).
 export async function acceptConsentOnly(): Promise<{ email: string } | { error: string }> {
-  const cookieStore = await cookies()
-  const session = cookieStore.get(STAGING_COOKIE)
-  if (!session) return { error: 'Not authenticated' }
+  if (IS_STAGING) {
+    const cookieStore = await cookies()
+    const session = cookieStore.get(STAGING_COOKIE)
+    if (!session) return { error: 'Not authenticated' }
 
-  const data = JSON.parse(session.value)
-  cookieStore.set(
-    STAGING_COOKIE,
-    JSON.stringify({ ...data, consentGiven: true }),
-    COOKIE_OPTIONS
+    const data = JSON.parse(session.value)
+    cookieStore.set(STAGING_COOKIE, JSON.stringify({ ...data, consentGiven: true }), COOKIE_OPTIONS)
+
+    const supabase = createServiceClient()
+    await supabase
+      .from('users')
+      .upsert({ email: data.email, consent_given: true, consent_given_at: new Date().toISOString() }, { onConflict: 'email' })
+
+    return { email: data.email }
+  }
+
+  // Production: email comes from Supabase session
+  const { createClient } = await import('@/lib/supabase/server')
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user?.email) return { error: 'Not authenticated' }
+
+  const email = user.email.toLowerCase()
+  const serviceClient = createServiceClient()
+  await serviceClient.from('users').upsert(
+    { email, consent_given: true, consent_given_at: new Date().toISOString() },
+    { onConflict: 'email' }
   )
-
-  const supabase = createServiceClient()
-  await supabase
-    .from('users')
-    .upsert({ email: data.email, consent_given: true, consent_given_at: new Date().toISOString() }, { onConflict: 'email' })
-
-  return { email: data.email }
+  return { email }
 }
 
 export async function demoSignIn(): Promise<void> {
@@ -104,11 +127,20 @@ export async function deleteAccount(
     return { error: 'Please enter a valid 6-digit code' }
   }
 
-  const cookieStore = await cookies()
-  const session = cookieStore.get(STAGING_COOKIE)
-  if (!session) return { error: 'Not authenticated' }
-
-  const { email } = JSON.parse(session.value)
+  // Get email from staging cookie (staging) or Supabase session (production)
+  let email: string | null = null
+  if (IS_STAGING) {
+    const cookieStore = await cookies()
+    const session = cookieStore.get(STAGING_COOKIE)
+    if (!session) return { error: 'Not authenticated' }
+    email = JSON.parse(session.value).email ?? null
+  } else {
+    const { createClient } = await import('@/lib/supabase/server')
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    email = user?.email?.toLowerCase() ?? null
+  }
+  if (!email) return { error: 'Not authenticated' }
 
   try {
     const supabase = createServiceClient()
@@ -139,8 +171,14 @@ export async function deleteAccount(
     return { error: 'Failed to delete account. Please try again.' }
   }
 
-  const cookieStore2 = await cookies()
-  cookieStore2.delete(STAGING_COOKIE)
+  if (IS_STAGING) {
+    const cookieStore = await cookies()
+    cookieStore.delete(STAGING_COOKIE)
+  } else {
+    const { createClient } = await import('@/lib/supabase/server')
+    const supabase = await createClient()
+    await supabase.auth.signOut()
+  }
   redirect('/auth')
 }
 

@@ -1,30 +1,14 @@
 'use server'
 
-import { cookies } from 'next/headers'
-import { STAGING_COOKIE } from '@/lib/constants'
 import { createServiceClient } from '@/lib/supabase/service'
 import { refreshGmailAccessToken } from '@/lib/gmail/api'
 import { scanGmailCandidates } from '@/lib/gmail/scanner'
-
-const IS_STAGING = process.env.NEXT_PUBLIC_APP_ENV === 'staging'
+import { getSessionEmail } from '@/lib/session'
 
 export interface ScanResult {
   newCandidates: number
   totalCandidates: number
   error: string
-}
-
-async function getSessionEmail(): Promise<string | null> {
-  if (IS_STAGING) {
-    const cookieStore = await cookies()
-    const session = cookieStore.get(STAGING_COOKIE)
-    if (!session) return null
-    return JSON.parse(session.value).email ?? null
-  }
-  const { createClient } = await import('@/lib/supabase/server')
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  return user?.email ?? null
 }
 
 // Scans Gmail for policy candidates and stores them in gmail_scan_candidates for review.

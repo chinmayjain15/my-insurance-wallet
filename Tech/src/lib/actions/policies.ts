@@ -1,10 +1,10 @@
 'use server'
 
-import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
-import { STAGING_COOKIE } from '@/lib/constants'
 import { createServiceClient } from '@/lib/supabase/service'
+import { extractAndSavePolicyDetails } from '@/lib/extract/policy-extractor'
+import { getSessionEmail } from '@/lib/session'
 
 const VALID_TYPES = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg']
 
@@ -44,11 +44,8 @@ export async function uploadPolicy(
   if (!VALID_TYPES.includes(file.type)) return { error: 'Only PDF, JPG, or PNG files are allowed' }
   if (file.size > 10 * 1024 * 1024)   return { error: 'File must be under 10 MB' }
 
-  const cookieStore = await cookies()
-  const session = cookieStore.get(STAGING_COOKIE)
-  if (!session) return { error: 'Not authenticated' }
-
-  const { email } = JSON.parse(session.value)
+  const email = await getSessionEmail()
+  if (!email) return { error: 'Not authenticated' }
 
   try {
     const supabase = createServiceClient()
@@ -64,7 +61,7 @@ export async function uploadPolicy(
 
     if (uploadError) return { error: `Storage upload failed: ${uploadError.message}` }
 
-    const { error: dbError } = await supabase
+    const { data: policyData, error: dbError } = await supabase
       .from('policies')
       .insert({
         user_id: userId,
@@ -74,8 +71,16 @@ export async function uploadPolicy(
         file_name: file.name,
         file_size_bytes: file.size,
       })
+      .select('id')
+      .single()
 
     if (dbError) return { error: `Failed to save policy: ${dbError.message}` }
+
+    // Kick off AI extraction — fire and forget, never blocks the redirect.
+    // Failures are recorded in policy_details.extraction_status = 'failed'.
+    if (policyData?.id) {
+      extractAndSavePolicyDetails(policyData.id, storagePath).catch(() => {})
+    }
   } catch (err) {
     return { error: err instanceof Error ? err.message : 'Unexpected error' }
   }
@@ -91,11 +96,8 @@ async function getOwnerUserId(email: string): Promise<string | null> {
 }
 
 export async function sharePolicy(policyId: string, contactId: string): Promise<{ error: string }> {
-  const cookieStore = await cookies()
-  const session = cookieStore.get(STAGING_COOKIE)
-  if (!session) return { error: 'Not authenticated' }
-
-  const { email } = JSON.parse(session.value)
+  const email = await getSessionEmail()
+  if (!email) return { error: 'Not authenticated' }
 
   try {
     const supabase = createServiceClient()
@@ -128,11 +130,8 @@ export async function sharePolicy(policyId: string, contactId: string): Promise<
 }
 
 export async function getSignedUrl(policyId: string): Promise<{ url: string; error: string }> {
-  const cookieStore = await cookies()
-  const session = cookieStore.get(STAGING_COOKIE)
-  if (!session) return { url: '', error: 'Not authenticated' }
-
-  const { email } = JSON.parse(session.value)
+  const email = await getSessionEmail()
+  if (!email) return { url: '', error: 'Not authenticated' }
 
   try {
     const supabase = createServiceClient()
@@ -161,11 +160,8 @@ export async function getSignedUrl(policyId: string): Promise<{ url: string; err
 }
 
 export async function deletePolicy(policyId: string): Promise<{ error: string }> {
-  const cookieStore = await cookies()
-  const session = cookieStore.get(STAGING_COOKIE)
-  if (!session) return { error: 'Not authenticated' }
-
-  const { email } = JSON.parse(session.value)
+  const email = await getSessionEmail()
+  if (!email) return { error: 'Not authenticated' }
 
   try {
     const supabase = createServiceClient()
@@ -191,11 +187,8 @@ export async function updatePolicyName(policyId: string, name: string): Promise<
   const trimmed = name.trim()
   if (!trimmed) return { error: 'Name is required' }
 
-  const cookieStore = await cookies()
-  const session = cookieStore.get(STAGING_COOKIE)
-  if (!session) return { error: 'Not authenticated' }
-
-  const { email } = JSON.parse(session.value)
+  const email = await getSessionEmail()
+  if (!email) return { error: 'Not authenticated' }
 
   try {
     const supabase = createServiceClient()
@@ -218,11 +211,8 @@ export async function updatePolicyName(policyId: string, name: string): Promise<
 }
 
 export async function getSharedPolicySignedUrl(policyId: string): Promise<{ url: string; error: string }> {
-  const cookieStore = await cookies()
-  const session = cookieStore.get(STAGING_COOKIE)
-  if (!session) return { url: '', error: 'Not authenticated' }
-
-  const { email } = JSON.parse(session.value)
+  const email = await getSessionEmail()
+  if (!email) return { url: '', error: 'Not authenticated' }
 
   try {
     const supabase = createServiceClient()
@@ -267,11 +257,8 @@ export async function getSharedPolicySignedUrl(policyId: string): Promise<{ url:
 }
 
 export async function unsharePolicy(policyId: string, contactId: string): Promise<{ error: string }> {
-  const cookieStore = await cookies()
-  const session = cookieStore.get(STAGING_COOKIE)
-  if (!session) return { error: 'Not authenticated' }
-
-  const { email } = JSON.parse(session.value)
+  const email = await getSessionEmail()
+  if (!email) return { error: 'Not authenticated' }
 
   try {
     const supabase = createServiceClient()

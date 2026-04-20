@@ -9,6 +9,7 @@ export interface Policy {
   uploadedAt: string // ISO string
   sharedWith: string[] // contact IDs
   source: 'upload' | 'email'
+  details: PolicyDetails | null
 }
 
 export interface Contact {
@@ -16,6 +17,20 @@ export interface Contact {
   name: string
   email: string
   addedAt: string // ISO string
+}
+
+export interface PolicyDetails {
+  id: string
+  policyId: string
+  insurerName: string | null
+  policyNumber: string | null
+  sumAssured: number | null        // rupees
+  annualPremium: number | null     // rupees
+  policyStartDate: string | null   // YYYY-MM-DD
+  expiryDate: string | null        // YYYY-MM-DD
+  nomineeName: string | null
+  extractionStatus: 'pending' | 'completed' | 'failed'
+  extractedAt: string
 }
 
 export interface SharedPolicy {

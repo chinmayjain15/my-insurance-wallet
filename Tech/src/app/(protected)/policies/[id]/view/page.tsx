@@ -1,14 +1,11 @@
-import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
-import { STAGING_COOKIE } from '@/lib/constants'
 import { getSignedUrl } from '@/lib/actions/policies'
+import { getSessionData } from '@/lib/session'
 import PolicyViewer from './PolicyViewer'
 
 export default async function ViewPolicyPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const cookieStore = await cookies()
-  const session = cookieStore.get(STAGING_COOKIE)
-  const isDemo = session ? JSON.parse(session.value).isDemo === true : false
+  const { isDemo } = await getSessionData()
 
   if (isDemo) {
     redirect(`/policies/${id}`)

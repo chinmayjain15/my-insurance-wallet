@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation'
 import { ArrowLeft, Eye, Share2, Edit3, Heart, FileText, Car, Activity } from 'lucide-react'
 import { useAppData } from '@/components/AppDataProvider'
 import { unsharePolicy, deletePolicy, updatePolicyName } from '@/lib/actions/policies'
-import { PolicyType } from '@/types'
+import { PolicyType, PolicyDetails } from '@/types'
+import { getExpiryStatus, expiryLabel } from '@/lib/utils'
 import Link from 'next/link'
 import { track } from '@/lib/analytics'
 
@@ -23,6 +24,73 @@ const TYPE_ICONS: Record<PolicyType, React.ElementType> = {
   Term:    FileText,
   Vehicle: Car,
   Other:   FileText,
+}
+
+function formatAmount(rupees: number): string {
+  if (rupees >= 10_000_000) return `₹${(rupees / 10_000_000).toFixed(rupees % 10_000_000 === 0 ? 0 : 2)} Cr`
+  if (rupees >= 100_000)    return `₹${(rupees / 100_000).toFixed(rupees % 100_000 === 0 ? 0 : 2)} L`
+  return `₹${rupees.toLocaleString('en-IN')}`
+}
+
+function formatDate(dateStr: string): string {
+  return new Date(dateStr).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })
+}
+
+function PolicyDetailsCard({ details }: { details: PolicyDetails }) {
+  if (details.extractionStatus === 'pending') {
+    return (
+      <div className="bg-card border border-border rounded-xl p-5">
+        <p className="text-sm font-medium text-foreground mb-2">Extracted Details</p>
+        <p className="text-sm text-muted-foreground">Extracting details from your document…</p>
+      </div>
+    )
+  }
+
+  if (details.extractionStatus === 'failed') {
+    return (
+      <div className="bg-card border border-border rounded-xl p-5">
+        <p className="text-sm font-medium text-foreground mb-2">Extracted Details</p>
+        <p className="text-sm text-muted-foreground">Could not extract details automatically. Try viewing the document directly.</p>
+      </div>
+    )
+  }
+
+  // rows declared below with highlight support
+  const rows: { label: string; value: string; highlight?: 'warn' | 'danger' }[] = []
+  if (details.insurerName)     rows.push({ label: 'Insurer',          value: details.insurerName })
+  if (details.policyNumber)    rows.push({ label: 'Policy Number',    value: details.policyNumber })
+  if (details.sumAssured)      rows.push({ label: 'Sum Assured',      value: formatAmount(details.sumAssured) })
+  if (details.annualPremium)   rows.push({ label: 'Annual Premium',   value: formatAmount(details.annualPremium) })
+  if (details.policyStartDate) rows.push({ label: 'Start Date',       value: formatDate(details.policyStartDate) })
+  if (details.expiryDate) {
+    const status = getExpiryStatus(details.expiryDate)
+    rows.push({
+      label: 'Renewal / Expiry',
+      value: status === 'ok' ? formatDate(details.expiryDate) : expiryLabel(details.expiryDate),
+      highlight: status === 'expired' ? 'danger' : status === 'soon' ? 'warn' : undefined,
+    })
+  }
+  if (details.nomineeName)     rows.push({ label: 'Nominee',          value: details.nomineeName })
+
+  if (rows.length === 0) return null
+
+  return (
+    <div className="bg-card border border-border rounded-xl p-5">
+      <p className="text-sm font-medium text-foreground mb-1">Extracted Details</p>
+      <div className="text-sm">
+        {rows.map(({ label, value, highlight }) => (
+          <div key={label} className="flex justify-between py-2 border-t border-border">
+            <span className="text-muted-foreground shrink-0">{label}</span>
+            <span className={`text-right ml-4 break-all ${
+              highlight === 'danger' ? 'text-red-600 dark:text-red-400 font-medium' :
+              highlight === 'warn'   ? 'text-amber-600 dark:text-amber-400 font-medium' :
+              'text-foreground'
+            }`}>{value}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
 }
 
 export default function PolicyDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -174,6 +242,9 @@ export default function PolicyDetailPage({ params }: { params: Promise<{ id: str
             </>
           )}
         </div>
+
+        {/* Extracted Details */}
+        {policy.details && <PolicyDetailsCard details={policy.details} />}
 
         {/* Shared With section */}
         <div>

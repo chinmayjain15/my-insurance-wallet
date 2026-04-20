@@ -1,16 +1,11 @@
-import { cookies } from 'next/headers'
-import { STAGING_COOKIE } from '@/lib/constants'
 import { getUserName } from '@/lib/actions/profile'
+import { getSessionData } from '@/lib/session'
 import BackButton from '@/components/ui/BackButton'
 import ProfileEditor from './ProfileEditor'
 import { PageViewTracker } from '@/components/PageViewTracker'
 
 export default async function ProfilePage() {
-  const cookieStore = await cookies()
-  const session = cookieStore.get(STAGING_COOKIE)
-  const sessionData = session ? JSON.parse(session.value) : null
-  const email: string = sessionData?.email ?? ''
-
+  const { email } = await getSessionData()
   const name = email ? await getUserName(email) : null
 
   return (
@@ -23,7 +18,7 @@ export default async function ProfilePage() {
         </div>
       </div>
       <PageViewTracker event="view-my-profile" />
-      <ProfileEditor initialName={name} email={email} />
+      <ProfileEditor initialName={name} email={email ?? ''} />
     </div>
   )
 }

@@ -1,16 +1,13 @@
-import { cookies } from 'next/headers'
-import { STAGING_COOKIE } from '@/lib/constants'
 import SharedPoliciesList from './SharedPoliciesList'
 import SharedPoliciesSubtitle from './SharedPoliciesSubtitle'
 import ReferAFriend from './ReferAFriend'
 import { SharedWithMeViewTracker } from '@/components/SharedWithMeViewTracker'
 import BackButton from '@/components/ui/BackButton'
+import { getSessionData } from '@/lib/session'
 
 export default async function OtherPoliciesPage() {
-  const cookieStore = await cookies()
-  const session = cookieStore.get(STAGING_COOKIE)
-  const sessionData = session ? JSON.parse(session.value) : null
-  const referrer: string = sessionData?.name ?? sessionData?.email ?? 'friend'
+  const { name, email } = await getSessionData()
+  const referrer: string = name ?? email ?? 'friend'
 
   return (
     <div className="min-h-screen pb-40">

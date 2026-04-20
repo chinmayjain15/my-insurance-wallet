@@ -1,5 +1,5 @@
 import { createServiceClient } from '@/lib/supabase/service'
-import { Policy, Contact, SharedPolicy } from '@/types'
+import { Policy, PolicyDetails, Contact, SharedPolicy } from '@/types'
 
 export async function getUserData(email: string): Promise<{
   userId: string | null
@@ -33,19 +33,42 @@ export async function getUserData(email: string): Promise<{
         .order('created_at', { ascending: false }),
     ])
 
-    // Build sharedWith map: policyId → contactId[]
+    // Build sharedWith map and fetch policy_details — run in parallel
     const policyIds = (rawPolicies ?? []).map(p => p.id)
     const sharedWithMap: Record<string, string[]> = {}
+    const detailsMap: Record<string, PolicyDetails> = {}
 
     if (policyIds.length > 0) {
-      const { data: outboundShares } = await supabase
-        .from('policy_shares')
-        .select('policy_id, contact_id')
-        .in('policy_id', policyIds)
+      const [{ data: outboundShares }, { data: rawDetails }] = await Promise.all([
+        supabase
+          .from('policy_shares')
+          .select('policy_id, contact_id')
+          .in('policy_id', policyIds),
+        supabase
+          .from('policy_details')
+          .select('*')
+          .in('policy_id', policyIds),
+      ])
 
       for (const share of outboundShares ?? []) {
         if (!sharedWithMap[share.policy_id]) sharedWithMap[share.policy_id] = []
         sharedWithMap[share.policy_id].push(share.contact_id)
+      }
+
+      for (const d of rawDetails ?? []) {
+        detailsMap[d.policy_id] = {
+          id: d.id,
+          policyId: d.policy_id,
+          insurerName: d.insurer_name ?? null,
+          policyNumber: d.policy_number ?? null,
+          sumAssured: d.sum_assured ?? null,
+          annualPremium: d.annual_premium ?? null,
+          policyStartDate: d.policy_start_date ?? null,
+          expiryDate: d.expiry_date ?? null,
+          nomineeName: d.nominee_name ?? null,
+          extractionStatus: d.extraction_status as PolicyDetails['extractionStatus'],
+          extractedAt: d.extracted_at,
+        }
       }
     }
 
@@ -58,6 +81,7 @@ export async function getUserData(email: string): Promise<{
       uploadedAt: p.created_at,
       sharedWith: sharedWithMap[p.id] ?? [],
       source: (p.source ?? 'upload') as 'upload' | 'email',
+      details: detailsMap[p.id] ?? null,
     }))
 
     contacts = (rawContacts ?? []).map(c => ({

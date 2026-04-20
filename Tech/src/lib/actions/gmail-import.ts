@@ -1,16 +1,14 @@
 'use server'
 
-import { cookies } from 'next/headers'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
-import { STAGING_COOKIE } from '@/lib/constants'
 import { createServiceClient } from '@/lib/supabase/service'
 import { refreshGmailAccessToken } from '@/lib/gmail/api'
 import { downloadCandidatePdf } from '@/lib/gmail/scanner'
 import { isPdfPasswordProtected } from '@/lib/gmail/pdf-utils'
+import { extractAndSavePolicyDetails } from '@/lib/extract/policy-extractor'
+import { getSessionEmail } from '@/lib/session'
 import type { PolicyType } from '@/types'
-
-const IS_STAGING = process.env.NEXT_PUBLIC_APP_ENV === 'staging'
 
 export interface ScanCandidate {
   id: string
@@ -29,19 +27,6 @@ export interface ImportResult {
   skipped: number
   passwordProtected: number
   error: string
-}
-
-async function getSessionEmail(): Promise<string | null> {
-  if (IS_STAGING) {
-    const cookieStore = await cookies()
-    const session = cookieStore.get(STAGING_COOKIE)
-    if (!session) return null
-    return JSON.parse(session.value).email ?? null
-  }
-  const { createClient } = await import('@/lib/supabase/server')
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  return user?.email ?? null
 }
 
 // Returns all pending candidates for the current user.
@@ -166,7 +151,7 @@ export async function importSelected(ids: string[]): Promise<ImportResult> {
 
     const policyName = row.attachment_filename.replace(/\.pdf$/i, '').trim() || row.subject || 'Imported policy'
 
-    const { error: dbError } = await supabase.from('policies').insert({
+    const { data: policyData, error: dbError } = await supabase.from('policies').insert({
       user_id: user.id,
       name: policyName,
       type: row.policy_type,
@@ -175,12 +160,17 @@ export async function importSelected(ids: string[]): Promise<ImportResult> {
       file_size_bytes: row.attachment_size_bytes,
       source: 'email',
       gmail_message_id: row.message_id,
-    })
+    }).select('id').single()
 
     if (dbError) {
       await supabase.storage.from('policies').remove([storagePath])
       skipped++
       continue
+    }
+
+    // Kick off AI extraction — fire and forget, never blocks the import loop.
+    if (policyData?.id) {
+      extractAndSavePolicyDetails(policyData.id, storagePath).catch(() => {})
     }
 
     // Remove from candidates on success

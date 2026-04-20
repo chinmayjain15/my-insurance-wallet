@@ -7,6 +7,7 @@ import HamburgerMenu from '@/components/layout/HamburgerMenu'
 import { useAppData } from '@/components/AppDataProvider'
 import { PolicyType } from '@/types'
 import { track } from '@/lib/analytics'
+import { getExpiryStatus, expiryLabel, formatAmount as fmt } from '@/lib/utils'
 
 const policyTypes: { type: PolicyType; icon: React.ElementType; cssVar: string }[] = [
   { type: 'Health', icon: Activity, cssVar: '--health' },
@@ -41,6 +42,17 @@ export default function HomePage() {
     policies.filter(p => p.type === type).forEach(p => p.sharedWith.forEach(id => contactIds.add(id)))
     return contactIds.size
   }
+  const getCoverage = (type: PolicyType) =>
+    policies.filter(p => p.type === type).reduce((sum, p) => sum + (p.details?.sumAssured ?? 0), 0)
+
+  const totalCoverage = policies.reduce((sum, p) => sum + (p.details?.sumAssured ?? 0), 0)
+
+  // Policies with an expiry date that are expired or expiring within 30 days
+  const renewalAlerts = policies.filter(p => {
+    if (!p.details?.expiryDate) return false
+    const status = getExpiryStatus(p.details.expiryDate)
+    return status === 'expired' || status === 'soon'
+  })
 
   const statusText = (count: number) => {
     if (count === 0) return 'No policies yet'
@@ -67,11 +79,48 @@ export default function HomePage() {
       <div className="max-w-lg mx-auto px-6 py-6">
         {/* Stats bar */}
         <div className="bg-accent border border-border rounded-xl p-4 mb-6 flex items-center justify-between">
-          <p className="text-sm text-muted-foreground">Total Coverage</p>
-          <p className="font-medium text-foreground">
-            {policies.length} {policies.length === 1 ? 'policy' : 'policies'}
-          </p>
+          <div>
+            <p className="text-xs text-muted-foreground">Policies</p>
+            <p className="font-medium text-foreground">
+              {policies.length} {policies.length === 1 ? 'policy' : 'policies'}
+            </p>
+          </div>
+          {totalCoverage > 0 ? (
+            <div className="text-right">
+              <p className="text-xs text-muted-foreground">Total Coverage</p>
+              <p className="font-medium text-foreground">{fmt(totalCoverage)}</p>
+            </div>
+          ) : (
+            <p className="text-xs text-muted-foreground">No coverage data yet</p>
+          )}
         </div>
+
+        {/* Renewal alerts */}
+        {renewalAlerts.length > 0 && (
+          <div className="mb-6 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl p-4 space-y-2">
+            <p className="text-sm font-medium text-amber-800 dark:text-amber-300">
+              {renewalAlerts.length === 1 ? '1 policy needs renewal' : `${renewalAlerts.length} policies need renewal`}
+            </p>
+            <div className="space-y-1">
+              {renewalAlerts.map(p => {
+                const status = getExpiryStatus(p.details!.expiryDate!)
+                return (
+                  <Link
+                    key={p.id}
+                    href={`/policies/${p.id}`}
+                    onClick={() => track('button-clicked', { screen: 'home', label: 'renewal-alert', 'policy-type': p.type })}
+                    className="flex items-center justify-between hover:opacity-80 transition-opacity"
+                  >
+                    <span className="text-sm text-amber-900 dark:text-amber-200 truncate mr-2">{p.name}</span>
+                    <span className={`text-xs font-medium shrink-0 ${status === 'expired' ? 'text-red-600 dark:text-red-400' : 'text-amber-700 dark:text-amber-400'}`}>
+                      {expiryLabel(p.details!.expiryDate!)}
+                    </span>
+                  </Link>
+                )
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Bento grid */}
         <div className="grid grid-cols-4 gap-3" style={{ gridAutoRows: '120px' }}>
@@ -79,6 +128,7 @@ export default function HomePage() {
             const Icon = item.icon
             const count = getCount(item.type)
             const sharedCount = getSharedCount(item.type)
+            const coverage = getCoverage(item.type)
 
             return (
               <Link
@@ -99,6 +149,9 @@ export default function HomePage() {
                   </div>
                   <h3 className="text-base text-foreground mb-1">{item.type}</h3>
                   <p className="text-xs text-muted-foreground">{statusText(count)}</p>
+                  {coverage > 0 && (
+                    <p className="text-xs mt-0.5 text-muted-foreground/80">{fmt(coverage)} covered</p>
+                  )}
                   {count > 0 && sharedCount > 0 && (
                     <p className="text-xs mt-0.5" style={{ color: `var(${item.cssVar}-foreground)` }}>
                       Shared with {sharedCount} {sharedCount === 1 ? 'person' : 'people'}

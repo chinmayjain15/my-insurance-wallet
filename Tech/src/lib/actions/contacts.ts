@@ -1,10 +1,9 @@
 'use server'
 
-import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
-import { STAGING_COOKIE } from '@/lib/constants'
 import { createServiceClient } from '@/lib/supabase/service'
+import { getSessionEmail } from '@/lib/session'
 
 async function getOrCreateUser(email: string): Promise<string | null> {
   const supabase = createServiceClient()
@@ -36,11 +35,8 @@ export async function addContact(
     return { error: 'Please enter a valid email address' }
   }
 
-  const cookieStore = await cookies()
-  const session = cookieStore.get(STAGING_COOKIE)
-  if (!session) return { error: 'Not authenticated' }
-
-  const { email: ownerEmail } = JSON.parse(session.value)
+  const ownerEmail = await getSessionEmail()
+  if (!ownerEmail) return { error: 'Not authenticated' }
 
   try {
     const supabase = createServiceClient()
@@ -64,11 +60,8 @@ export async function addContact(
 }
 
 export async function deleteContact(contactId: string): Promise<{ error: string }> {
-  const cookieStore = await cookies()
-  const session = cookieStore.get(STAGING_COOKIE)
-  if (!session) return { error: 'Not authenticated' }
-
-  const { email } = JSON.parse(session.value)
+  const email = await getSessionEmail()
+  if (!email) return { error: 'Not authenticated' }
 
   try {
     const supabase = createServiceClient()

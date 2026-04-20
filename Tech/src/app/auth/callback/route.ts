@@ -3,6 +3,8 @@ import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { STAGING_COOKIE } from '@/lib/constants'
 
+const IS_STAGING = process.env.NEXT_PUBLIC_APP_ENV === 'staging'
+
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
@@ -20,11 +22,13 @@ export async function GET(request: NextRequest) {
     {
       cookies: {
         getAll: () => cookieStore.getAll(),
-        setAll: (cs: { name: string; value: string; options: CookieOptions }[]) => cs.forEach(({ name, value, options }) => cookieStore.set(name, value, options)),
+        setAll: (cs: { name: string; value: string; options: CookieOptions }[]) =>
+          cs.forEach(({ name, value, options }) => cookieStore.set(name, value, options)),
       },
     }
   )
 
+  // exchangeCodeForSession sets the Supabase session cookies automatically
   const { data: { session }, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
 
   if (exchangeError || !session?.user?.email) {
@@ -35,7 +39,6 @@ export async function GET(request: NextRequest) {
   const { createServiceClient } = await import('@/lib/supabase/service')
   const serviceClient = createServiceClient()
 
-  // Normal sign-in callback
   const { data: existingUser } = await serviceClient
     .from('users')
     .select('id, consent_given')
@@ -44,13 +47,17 @@ export async function GET(request: NextRequest) {
 
   const consentGiven = existingUser?.consent_given === true
 
-  cookieStore.set(STAGING_COOKIE, JSON.stringify({ email, consentGiven, createdAt: Date.now() }), {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    maxAge: 60 * 60 * 24 * 7,
-    path: '/',
-  })
+  // Staging only: also stamp the legacy staging cookie so the email bypass
+  // and Google OAuth paths both work during local development.
+  if (IS_STAGING) {
+    cookieStore.set(STAGING_COOKIE, JSON.stringify({ email, consentGiven, createdAt: Date.now() }), {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 7,
+      path: '/',
+    })
+  }
 
   if (!consentGiven) {
     return NextResponse.redirect(`${origin}/consent`)

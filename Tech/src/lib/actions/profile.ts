@@ -1,9 +1,8 @@
 'use server'
 
-import { cookies } from 'next/headers'
 import { revalidatePath } from 'next/cache'
-import { STAGING_COOKIE } from '@/lib/constants'
 import { createServiceClient } from '@/lib/supabase/service'
+import { getSessionEmail } from '@/lib/session'
 
 export async function updateUserName(
   _prevState: { error: string; success: boolean },
@@ -14,11 +13,8 @@ export async function updateUserName(
   if (!name) return { error: 'Name is required', success: false }
   if (name.length < 2) return { error: 'Name must be at least 2 characters', success: false }
 
-  const cookieStore = await cookies()
-  const session = cookieStore.get(STAGING_COOKIE)
-  if (!session) return { error: 'Not authenticated', success: false }
-
-  const { email } = JSON.parse(session.value)
+  const email = await getSessionEmail()
+  if (!email) return { error: 'Not authenticated', success: false }
 
   try {
     const supabase = createServiceClient()
