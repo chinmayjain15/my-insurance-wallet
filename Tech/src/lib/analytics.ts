@@ -2,6 +2,17 @@ import * as amplitude from '@amplitude/analytics-browser'
 import mixpanel from 'mixpanel-browser'
 import { RudderAnalytics } from '@rudderstack/analytics-js'
 import posthog from 'posthog-js'
+import { logEvent } from '@/lib/actions/analytics'
+
+function getSessionId(): string {
+  const key = 'miw_session_id'
+  let id = sessionStorage.getItem(key)
+  if (!id) {
+    id = crypto.randomUUID()
+    sessionStorage.setItem(key, id)
+  }
+  return id
+}
 
 let amplitudeInitialized = false
 let mixpanelInitialized = false
@@ -89,6 +100,15 @@ export function track(event: string, props?: Record<string, string | boolean | n
   if (posthogInitialized) {
     posthog.capture(event, props ?? undefined)
   }
+
+  const { screen, label, ...rest } = (props ?? {}) as Record<string, string | boolean | number | null>
+  logEvent(
+    event,
+    typeof screen === 'string' ? screen : null,
+    typeof label === 'string' ? label : null,
+    Object.keys(rest).length > 0 ? rest : null,
+    getSessionId(),
+  ).catch(() => {})
 }
 
 export function reset() {
